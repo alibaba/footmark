@@ -13,10 +13,6 @@ class AccessKey(TaggedRAMObject):
             return self.access_key_id
         if name == 'secret':
             return self.access_key_secret
-        if name == 'is_active':
-            return self.is_active
-        if name == 'create_date':
-            return self.create_date
         raise AttributeError
 
     def __setattr__(self, name, value):
@@ -24,10 +20,6 @@ class AccessKey(TaggedRAMObject):
             self.access_key_id = value
         if name == 'secret':
             self.secret = value
-        if name == 'is_active':
-            self.is_active = value
-        if name == 'create_date':
-            self.create_date = value
         if name == 'tags' and value:
             v = {}
             for tag in value['tag']:
