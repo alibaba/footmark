@@ -119,6 +119,15 @@ class RDSResponseError(FootmarkServerError):
         super(RDSResponseError, self).__init__(status, body)
 
 
+class RamResponseError(FootmarkServerError):
+    """
+    Error in response from RAM.
+    """
+
+    def __init__(self, status, body=None):
+        super(RamResponseError, self).__init__(status, body)
+
+
 class OSSResponseError(FootmarkServerError):
     """
     Error in response from OSS.
