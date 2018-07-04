@@ -5,7 +5,7 @@ from footmark.vpc.vpcobject import TaggedVPCObject
 
 
 class VSwitch(TaggedVPCObject):
-    def __init__(self, connection=None, ):
+    def __init__(self, connection=None):
         super(VSwitch, self).__init__(connection)
         self.tags = {}
 
@@ -37,14 +37,39 @@ class VSwitch(TaggedVPCObject):
             setattr(self, 'vswitch' + name[6:], value)
         super(TaggedVPCObject, self).__setattr__(name, value)
 
-    def update(self, name=None, description=None):
-        """
-        Update vswitch's attribute
-        """
-        return self.connection.modify_vswitch(self.id, vswitch_name=name, description=description)
+    def modify(self, name=None, description=None):
+        params = {}
+        if self.vswitch_name != name:
+            params['vswitch_name'] = name
+        if self.description != description:
+            params['Descripton'] = description
+        if params:
+            params['vswitch_id'] = self.vswitch_id
+            return self.connection.modify_vswitch(params)
+        return False
+
+    def get(self):
+        return self.connection.get_vswitch_attribute(self.vswitch_id)
 
     def delete(self):
-        """
-        Terminate the vswitch
-        """
-        return self.connection.delete_vswitch(self.id)
+        return self.connection.delete_vswitch(self.vswitch_id)
+
+    def read(self):
+        vswitch = {}
+        for name, value in self.__dict__.items():
+            if name in ["connection", "region_id", "region"]:
+                continue
+
+            if name == 'vswitch_id':
+                vswitch['id'] = value
+                vswitch['subnet_id'] = value
+
+            if name == 'status':
+                name = 'state'
+                value = str(value).lower()
+
+            if name == 'zone_id':
+                name = 'availability_zone'
+
+            vswitch[name] = value
+        return vswitch

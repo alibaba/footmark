@@ -9,7 +9,6 @@ import six
 import time
 import json
 import base64
-import logging
 from footmark.ecs.config import *
 from footmark.connection import ACSQueryConnection
 from footmark.ecs.zone import Zone
@@ -19,13 +18,12 @@ from footmark.ecs.instance import Instance
 from footmark.ecs.image import Image
 from footmark.ecs.securitygroup import SecurityGroup
 from footmark.ecs.volume import Disk
+from footmark.ecs.networkinterface import NetworkInterfaceSet
 from footmark.exception import ECSResponseError
-from functools import wraps
 from footmark.resultset import ResultSet
 from aliyunsdkcore.acs_exception.exceptions import ServerException
-# from aliyunsdkecs.request.v20140526.AttachKeyPairRequest import Request import
+# from aliyunsdkecs.request.v20140526.DescribeSecurityGroupsRequest import Request import
 # from aliyunsdkcore.auth.composer.rpc_signature_composer import ServerException
-# from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import
 
 
 class ECSConnection(ACSQueryConnection):
@@ -165,16 +163,14 @@ class ECSConnection(ACSQueryConnection):
                     filters = {}
                     filters['instance_id'] = inst.id
                     volumes = self.get_all_volumes(filters=filters)
-                    block_device_mapping = {}
-                    for vol in volumes:
-                        block_device_mapping[vol.id] = vol
-                    setattr(inst, 'block_device_mapping', block_device_mapping)
+                    setattr(inst, 'block_device_mapping', volumes)
                     if inst.security_group_ids:
                         group_ids = []
+                        security_groups = []
                         for sg_id in inst.security_group_ids['security_group_id']:
                             group_ids.append(str(sg_id))
-                            security_groups = self.get_all_security_groups(group_ids=group_ids)
-                            setattr(inst, 'security_groups', security_groups)
+                            security_groups.append(self.get_security_group_attribute(sg_id))
+                        setattr(inst, 'security_groups', security_groups)
                     instances.append(inst)
                 if pagenumber or len(instance_list) < pagesize:
                     break
@@ -409,7 +405,7 @@ class ECSConnection(ACSQueryConnection):
             self.build_filter_params(params, filters)
         return self.get_list('DescribeDisks', params, ['Disks', Disk])
 
-    def create_instance(self, image_id, instance_type, group_id=None, zone_id=None, instance_name=None,
+    def create_instance(self, image_id, instance_type, security_group_id=None, zone_id=None, instance_name=None,
                         description=None, internet_charge_type=None, max_bandwidth_in=None, max_bandwidth_out=None,
                         host_name=None, password=None, io_optimized='optimized', system_disk_category=None, system_disk_size=None,
                         system_disk_name=None, system_disk_description=None, disks=None, vswitch_id=None, private_ip=None,
@@ -544,8 +540,8 @@ class ECSConnection(ACSQueryConnection):
         self.build_list_params(params, instance_type, 'InstanceType')
 
         # Security Group
-        if group_id:
-            self.build_list_params(params, group_id, 'SecurityGroupId')
+        if security_group_id:
+            self.build_list_params(params, security_group_id, 'SecurityGroupId')
 
         # Instance Details
         if instance_name:
@@ -1044,48 +1040,24 @@ class ECSConnection(ACSQueryConnection):
 
         return self.get_object('DescribeSecurityGroupAttribute', params, SecurityGroup)
 
-    def get_all_security_groups(self, group_ids=None, vpc_id=None, filters=None, name=None):
-        """
-        Get all security groups associated with your account in a region.
-    
-        :type group_ids: list
-        :param group_ids: A list of IDs of security groups to retrieve for
-                          security groups within a VPC.
-                          
-        :type vpc_id: string
-        :param vpc_id: ID of vpc which security groups belong.
-        		
-        :type name: string
-        :param name: Name of the security group.
-    
-        :type filters: dict
-        :param filters: Optional filters that can be used to limit
-                        the results returned.  Filters are provided
-                        in the form of a dictionary consisting of
-                        filter names as the key and filter values
-                        as the value.  The set of allowable filter
-                        names/values is dependent on the request
-                        being performed.  Check the ECS API guide
-                        for details.
-    
-        :rtype: list
-        :return: A list of SecurityGroup
-        """
-        params = {}
+    def get_all_security_groups(self, filters=None):
         groups = []
-        if group_ids:
-            self.build_list_params(params, group_ids, 'SecurityGroupIds')
-        if vpc_id:
-            self.build_list_params(params, vpc_id, 'VpcId')
-        if name:
-            self.build_list_params(params, name, 'SecurityGroupName')
-        if filters:
-            self.build_filter_params(params, filters)
-        results = self.get_list('DescribeSecurityGroups', params, ['SecurityGroups', SecurityGroup])
+        if not filters:
+            filters = {}
+        filters['Action'] = 'DescribeSecurityGroups'
+        count = 1
+        tags = filters.get("tags", filters.get('Tags'))
+        if tags:
+            for key, value in tags:
+                filters['tag_{0}_key'.format(count)] = key
+                filters['tag_{0}_value'.format(count)] = value
+                count = count + 1
+                if count > 5:
+                    break
+        results = self.get_list_new(self.build_request_params(filters), ['SecurityGroups', SecurityGroup])
         if results:
             for group in results:
                 groups.append(self.get_security_group_attribute(group_id=group.id))
-
             return groups
         return results
 
@@ -1750,3 +1722,74 @@ class ECSConnection(ACSQueryConnection):
         all_regions = self.get_list('DescribeRegions', None, ['Regions', RegionInfo])
         return all_regions
 
+    def create_network_interface(self, params):
+        params['Action'] = 'CreateNetworkInterface'
+        result = self.get_object_new(self.build_request_params(params), ResultSet)
+        if not self.wait_for_network_interface(result.network_interface_id, "Available"):
+            raise Exception("Waitting Network Interface {0} Failed.".format("Available"))
+        return self.get_network_interface(result.network_interface_id)
+
+    def get_all_network_interfaces(self, filters=None):
+        if not filters:
+            filters = {}
+        filters['Action'] = 'DescribeNetworkInterfaces'
+        return self.get_list_new(self.build_request_params(filters), ['NetworkInterfaceSets', NetworkInterfaceSet])
+
+    def get_network_interface(self, network_interface_id):
+        result = self.get_all_network_interfaces({"network_interface_ids": [network_interface_id]})
+        if len(result) == 1:
+            return result[0]
+        return None
+
+    def attach_network_interface(self, network_interface_id, instance_id):
+        params = {'NetworkInterfaceId': network_interface_id,
+                  'InstanceId': instance_id,
+                  'Action': 'AttachNetworkInterface'
+                  }
+
+        changed = self.get_status_new(self.build_request_params(params))
+        if not self.wait_for_network_interface(network_interface_id, "InUse"):
+            raise Exception("Waitting Network Interface {0} Failed.".format("InUse"))
+        return changed
+
+    def detach_network_interface(self, network_interface_id, instance_id):
+        params = {'NetworkInterfaceId': network_interface_id,
+                  'InstanceId': instance_id,
+                  'Action': 'DetachNetworkInterface'
+                  }
+
+        changed = self.get_status_new(self.build_request_params(params))
+        if not self.wait_for_network_interface(network_interface_id, "Available"):
+            raise Exception("Waitting Network Interface {0} Failed.".format("Available"))
+        return changed
+
+    def modify_network_interface(self, params):
+        params['Action'] = 'ModifyNetworkInterfaceAttribute'
+        if self.get_status_new(self.build_request_params(params)):
+            time.sleep(8)
+            return True
+        return False
+
+    def delete_network_interface(self, network_interface_id):
+        params = {'network_interface_id': network_interface_id,
+                  'Action': 'DeleteNetworkInterface'
+                  }
+        return self.get_status_new(self.build_request_params(params))
+
+    def wait_for_network_interface(self, id, status, delay=DefaultWaitForInterval, timeout=DefaultTimeOut):
+        """
+        To verify network interface status has become expected
+        """
+        tm = timeout
+        while True:
+            result = self.get_network_interface(id)
+            if result and str(result.status).lower() in [status, str(status).lower()]:
+                return True
+
+            tm -= delay
+
+            if tm < 0:
+                raise Exception("Timeout Error: Waiting for network interface {0} {1}, time-consuming {2} seconds.".format(id, status, timeout))
+
+            time.sleep(delay)
+        return False

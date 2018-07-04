@@ -20,6 +20,8 @@ from pprint import pprint
 
 from aliyunsdkcore import client
 from aliyunsdkcore.acs_exception.exceptions import ServerException
+# from aliyunsdkecs.request.v20140526.DescribeNetworkInterfacesRequest import
+
 
 
 class ACSAuthConnection(object):
@@ -86,6 +88,46 @@ class ACSQueryConnection(ACSAuthConnection):
         self.product = product
         self.user_agent = user_agent
 
+    def import_request(self, action):
+        try:
+            target = importlib.import_module(self.product + '.' + action + 'Request')
+            return getattr(target, action + 'Request')()
+        except Exception as e:
+            raise Exception("Importing {0} request got an error: {1}.".format(action, e))
+
+    def build_request_params(self, filters):
+        params = {}
+
+        if not filters:
+            return params
+
+        if not isinstance(filters, dict):
+            raise Exception("Error: 'filters' must be a dict. Current value is: {0}.".format(filters))
+
+        if not filters.get('Action', filters.get('action')):
+            raise Exception("'Action' is required for this request.")
+
+        # get all of the specified request's method names dict, like {'InstanceId':'set_InstanceId', 'Name':'set_Name'}
+        methods = {}
+        request = self.import_request(filters.get('Action', filters.get('action')))
+        if not request:
+            raise Exception("There is no available request about action {0}.".format(filters.get('Action', filters.get('action'))))
+        for name in dir(request):
+            if str(name).startswith('set_') and name[4] <= 'Z':
+                methods[str(name[4:]).lower()] = name
+
+        # build request params dict, like {'set_InstanceId':'i-12345', 'set_Name':'abcd'}
+        if methods:
+            for key, value in filters.items():
+                if value is None:
+                    continue
+                name = str(key).lower().replace("-", "").replace("_", "")
+                if name in methods:
+                    params[methods[name]] = value
+                if key in ['Action', 'action']:
+                    params['Action'] = value
+        return params
+
     def make_request(self, action, params=None):
         conn = client.AcsClient(self.acs_access_key_id, self.acs_secret_access_key, self.region, user_agent=self.user_agent)
         if not conn:
@@ -96,8 +138,7 @@ class ACSQueryConnection(ACSAuthConnection):
         delay = 3
         while timeout > 0:
             try:
-                target = importlib.import_module(self.product + '.' + action + 'Request')
-                request = getattr(target, action + 'Request')()
+                request = self.import_request(action)
                 request.set_accept_format('json')
                 if params and isinstance(params, dict):
                     for k, v in params.items():
@@ -224,6 +265,89 @@ class ACSQueryConnection(ACSAuthConnection):
     def get_object(self, action, params, obj):
         try:
             body = self.make_request(action, params)
+            footmark.log.debug(body)
+            markers = ["", obj]
+            obj = self.parse_response(markers, body, self)
+            if obj:
+                return obj
+            return None
+        except ServerException as e:
+            footmark.log.error('%s' % e)
+            raise e
+        except Exception as e:
+            footmark.log.error('%s' % e)
+            raise e
+
+    def make_request_new(self, params):
+        if not params:
+            raise Exception("Request parameters should not be empty.")
+
+        conn = client.AcsClient(self.acs_access_key_id, self.acs_secret_access_key, self.region, user_agent=self.user_agent)
+        if not conn:
+            footmark.log.error('%s %s' % ('Null AcsClient ', conn))
+            raise self.FootmarkClientError('Null AcsClient ', conn)
+
+        timeout = 200
+        delay = 3
+        if not isinstance(params, dict):
+            raise Exception("Invalid request parameters: {0} should be a dict.".format(params))
+
+        if not params.get('Action', params.get('action')):
+            raise Exception("'Action' is required for this request.")
+
+        while timeout > 0:
+            request = self.import_request(params.get('Action', params.get('action')))
+            request.set_accept_format('json')
+            try:
+                for k, v in params.items():
+                    if hasattr(request, k):
+                        getattr(request, k)(v)
+                    else:
+                        request.add_query_param(k[4:], v)
+                return conn.do_action_with_exception(request)
+            except ServerException as e:
+                if str(e.error_code) == "SDK.ServerUnreachable" \
+                        or str(e.message).__contains__("SDK.ServerUnreachable") \
+                        or str(e.message).__contains__("Unable to connect server: timed out"):
+                    time.sleep(delay)
+                    timeout -= delay
+                    continue
+                raise e
+            except Exception as e:
+                raise e
+
+        return None
+
+    def get_list_new(self, params, markers):
+        try:
+            body = self.make_request_new(params)
+            footmark.log.debug('body= %s' % body)
+            return self.parse_response(markers, body, self)
+        except ServerException as e:
+            footmark.log.error('%s' % e)
+            raise self.ResponseError(e)
+        except Exception as e:
+            footmark.log.error('%s' % e)
+            raise e
+
+    def get_status_new(self, params):
+        try:
+            body = self.make_request_new(params)
+            footmark.log.debug('body= %s' % body)
+            body = json.loads(body, encoding='UTF-8')
+            if body:
+                return True
+            return False
+        except ServerException as e:
+            footmark.log.error('%s' % e)
+            raise e
+        except Exception as e:
+            footmark.log.error('%s' % e)
+            raise e
+
+    def get_object_new(self, params, obj):
+        try:
+            body = self.make_request_new(params)
             footmark.log.debug(body)
             markers = ["", obj]
             obj = self.parse_response(markers, body, self)

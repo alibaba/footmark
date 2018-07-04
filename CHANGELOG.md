@@ -1,4 +1,10 @@
-## 1.5.0 (unreleased)
+## 1.5.0 (July 4, 2018)
+
+IMPROVEMENTS:
+
+  * support network interface management ([#6](https://github.com/alibaba/footmark/pull/6))
+  * add new make request method ([#6](https://github.com/alibaba/footmark/pull/6))
+  * improve vpc, vswitch and security group ([#6](https://github.com/alibaba/footmark/pull/6))
 
 ## 1.3.0 (January 8, 2018)
 
