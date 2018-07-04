@@ -120,7 +120,7 @@ class Instance(TaggedECSObject):
         """
         Start the instance.
         """
-        rs = self.connection.start_instances([self.id])
+        return self.connection.start_instances([self.id])
 
     def stop(self, force=False):
         """
@@ -132,7 +132,7 @@ class Instance(TaggedECSObject):
         :rtype: list
         :return: A list of the instances stopped
         """
-        rs = self.connection.stop_instances([self.id], force)
+        return self.connection.stop_instances([self.id], force)
 
     def reboot(self, force=False):
         """
@@ -156,8 +156,10 @@ class Instance(TaggedECSObject):
         :type password: str
         :param password: Instance Password
         """
-        return self.connection.modify_instances([self.id], name=name, description=description,
-                                                host_name=host_name, password=password)
+        if self.name != name or self.description != description or self.host_name != host_name or password:
+            return self.connection.modify_instances([self.id], name=name, description=description,
+                                                    host_name=host_name, password=password)
+        return False
 
     def terminate(self, force=False):
         """
@@ -166,7 +168,7 @@ class Instance(TaggedECSObject):
         :type force: bool
         :param force: Forces the instance to terminate
         """
-        rs = self.connection.terminate_instances([self.id], force)
+        return self.connection.terminate_instances([self.id], force)
 
     def join_security_group(self, security_group_id):
         """
@@ -175,7 +177,7 @@ class Instance(TaggedECSObject):
         :type security_group_id: str
         :param security_group_id: The Security Group ID.
         """
-        rs = self.connection.join_security_group(self.id, security_group_id)
+        return self.connection.join_security_group(self.id, security_group_id)
 
     def leave_security_group(self, security_group_id):
         """
@@ -184,7 +186,7 @@ class Instance(TaggedECSObject):
         :type security_group_id: str
         :param security_group_id: The Security Group ID.
         """
-        rs = self.connection.leave_security_group(self.id, security_group_id)
+        return self.connection.leave_security_group(self.id, security_group_id)
 
     def attach_key_pair(self, key_pair_name):
         """
@@ -193,10 +195,82 @@ class Instance(TaggedECSObject):
         :type key_pair_name: str
         :param key_pair_name: The Key Pair Name.
         """
-        rs = self.connection.attach_key_pair([self.id], key_pair_name)
+        return self.connection.attach_key_pair([self.id], key_pair_name)
 
     def detach_key_pair(self):
         """
         detach one key pair
         """
-        rs = self.connection.detach_key_pair([self.id], self.key_pair_name)
+        return self.connection.detach_key_pair([self.id], self.key_pair_name)
+
+    def read(self):
+        instance = {"gpu": {"amount": 0, "spec": ""}}
+        for name, value in self.__dict__.items():
+            if name in ["connection", "region_id", "region", "security_group_ids", "dedicated_host_attribute", "device_available",
+                        "instance_type_family", "operation_locks", "recyclable", "sale_cycle", "serial_number", "stopped_mode",
+                        "vlan_id", "spot_price_limit", "spot_strategy", "cluster_id", "instance_network_type", "start_time"]:
+                continue
+
+            if name == "instance_id":
+                instance['id'] = value
+
+            if name == "block_device_mapping":
+                volumes = []
+                for disk in value:
+                    volumes.append({
+                        "device_name": disk.device,
+                        "attach_time": disk.attached_time,
+                        "delete_on_termination": disk.delete_with_instance,
+                        "status": disk.status,
+                        "volume_id": disk.disk_id
+                    })
+                value = volumes
+
+            if name == "security_groups":
+                groups = []
+                for sg in value:
+                    groups.append({
+                        "group_id": sg.group_id,
+                        "group_name": sg.group_name
+                    })
+                value = groups
+
+            if name == "vpc_attributes":
+                instance["vpc_id"] = value["vpc_id"]
+                instance["vswitch_id"] = value["vswitch_id"]
+                if value["private_ip_address"]["ip_address"]:
+                    instance["private_ip_address"] = value["private_ip_address"]["ip_address"][0]
+                continue
+
+            if name == "network_interfaces":
+                value = value["network_interface"]
+
+            if name == "public_ip_address":
+                if value and value["ip_address"]:
+                    value = value["ip_address"][0]
+
+            if name == "inner_ip_address":
+                if value and value["ip_address"]:
+                    value = value["ip_address"][0]
+
+            if name == "eip_address":
+                name = "eip"
+                if value["ip_address"]:
+                    value["ip_address"] = value["ip_address"][0]
+
+            if name == "gpuamount":
+                instance["gpu"]["amount"] = value
+                continue
+
+            if name == "gpuspec":
+                instance["gpu"]["specification"] = value
+                continue
+
+            if name == "zone_id":
+                name = "availability_zone"
+
+            if name == "statue":
+                name = "state"
+
+            instance[name] = value
+        return instance

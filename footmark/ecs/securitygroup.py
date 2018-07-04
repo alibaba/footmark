@@ -47,3 +47,37 @@ class SecurityGroup(TaggedECSObject):
         Terminate the security group
         """
         return self.connection.delete_security_group(self.id)
+
+    def get(self):
+        """
+        Terminate the security group
+        """
+        return self.connection.get_security_group_attribute(self.id)
+
+    def read(self):
+        group = {}
+        ingresses = []
+        egresses  = []
+        for name, value in self.__dict__.items():
+            if name in ["connection", "region_id", "region", "request_id"]:
+                continue
+
+            if name == "security_group_id":
+                group['id'] = value
+                name = "group_id"
+
+            if name == 'security_group_name':
+                name = "group_name"
+
+            if name == 'permissions':
+                for rule in value:
+                    if rule['direction'] == 'ingress':
+                        ingresses.append(rule)
+                    else:
+                        egresses.append(rule)
+                group[name] = ingresses
+                group[name + '_egress'] = egresses
+                continue
+
+            group[name] = value
+        return group

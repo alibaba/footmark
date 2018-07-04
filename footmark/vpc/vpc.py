@@ -36,11 +36,46 @@ class Vpc(TaggedVPCObject):
             value = v
         super(TaggedVPCObject, self).__setattr__(name, value)
 
-    def update(self, name=None, description=None, user_cidr=None):
+    def modify(self, vpc_name=None, description=None, user_cidrs=None):
         """
         Update vpc's attribute
         """
-        return self.connection.modify_vpc(self.id, vpc_name=name, description=description, user_cidr=user_cidr)
+        params = {}
+        if user_cidrs and sorted(user_cidrs) != sorted(self.user_cidrs['user_cidr']):
+            params['user_cidr'] = str(',').join(user_cidrs)
+        if self.name != vpc_name:
+            params['vpc_name'] = vpc_name
+        if self.description != description:
+            params['description'] = description
+        if params:
+            params['vpc_id'] = self.vpc_id
+            return self.connection.modify_vpc(params)
+        return False
+
+    def get(self):
+        return self.connection.get_vpc_attribute(self.id)
+
+    def read(self):
+        vpc = {}
+        for name, value in self.__dict__.items():
+            if name in ["connection", "region_id", "region"]:
+                continue
+
+            if name == 'vpc_id':
+                vpc['id'] = value
+
+            if name == 'status':
+                name = 'state'
+                value = str(value).lower()
+
+            if name == 'user_cidrs':
+                value = value['user_cidr']
+
+            if name == 'vswitch_ids':
+                value = value['vswitch_id']
+
+            vpc[name] = value
+        return vpc
 
     def delete(self):
         """

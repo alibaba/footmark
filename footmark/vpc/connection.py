@@ -69,291 +69,94 @@ class VPCConnection(ACSQueryConnection):
 
             self.build_filters_params(params, value)
 
-    def create_vpc(self, cidr_block=None, user_cidr=None, vpc_name=None, description=None, client_token=None,
-                   wait_timeout=None, wait=None):
+    def create_vpc(self, params):
+        if not params:
+            raise Exception('There is no any parameter used to create a new vpc.')
+        params['Action'] = 'CreateVpc'
 
-        """
-        Create a ECS VPC (virtual private cloud) in Aliyun Cloud
-        :type cidr_block: String
-        :param cidr_block: The cidr block representing the VPC, e.g. 10.0.0.0/8
-        :type user_cidr: String
-        :param user_cidr: User custom cidr in the VPC
-        :type vpc_name: String
-        :param vpc_name: A VPC name
-        :type description: String
-        :param description: Description about VPC
-        :type wait: string
-        :param wait: An optional bool value indicating wait for instance to be running before running
-        :type wait_timeout: int
-        :param wait_timeout: An optional int value indicating how long to wait, default 300
-        :return: Returns details of created VPC
-        """
+        user_cidrs = params.get('user_cidrs')
+        if user_cidrs:
+            if not isinstance(user_cidrs, list):
+                raise Exception("Error: 'user_cidrs' must be a list. Current value is: {0}.".format(user_cidrs))
+            params['user_cidr'] = str(",").join(user_cidrs)
 
-        params = {}
-        timeout = 20
-
-        if cidr_block:
-            self.build_list_params(params, cidr_block, 'CidrBlock')
-
-        if user_cidr:
-            self.build_list_params(params, user_cidr, 'UserCidr')
-
-        if vpc_name:
-            self.build_list_params(params, vpc_name, 'VpcName')
-
-        if description:
-            self.build_list_params(params, description, 'Description')
-
-        if client_token:
-            self.build_list_params(params, client_token, 'ClientToken')
-        response = self.get_object('CreateVpc', params, ResultSet)
+        response = self.get_object_new(self.build_request_params(params), ResultSet)
         vpc_id = str(response.vpc_id)
-        if str(wait).lower() in ['yes', 'true'] and wait_timeout:
-            timeout = wait_timeout
-        self.wait_for_vpc_status(vpc_id, 'Available', 4, timeout)
-
+        self.wait_for_vpc_status(vpc_id, 'Available', 4, 120)
         return self.get_vpc_attribute(vpc_id)
 
     def get_vpc_attribute(self, vpc_id):
-        """
-        method to get all vpcId of particular region 
-        :return: Return All vpcs in the region
-        """
-        vpcs = self.get_all_vpcs(vpc_id=vpc_id)
+        vpcs = self.get_all_vpcs({'vpc_ids': [vpc_id]})
         if vpcs:
             return vpcs[0]
 
         return None
 
-    def get_all_vpcs(self, vpc_id=None, is_default=None, pagenumber=1, pagesize=10):
-        """
-        Find Vpc in One Region
-        :type vpc_id: string
-        :param vpc_id: Vpc Id of the targeted Vpc to terminate
-        :type is_default: bool
-        :param is_default: The vpc created by system if it is True
-        :type pagenumber: integer
-        :param pagenumber: Page number of the instance status list. The start value is 1. The default value is 1
-        :type pagesize: integer
-        :param pagesize: Sets the number of lines per page for queries per page. The maximum value is 50.
-        The default value is 10
-        :rtype: list
-        :return: Returns VPC list if vpcs found along with Vpc details.
-        """
-        params = {}
+    def get_all_vpcs(self, filters=None):
+        if not filters:
+            filters = {}
+        vpc_ids = filters.get('vpc_ids')
+        if vpc_ids:
+            filters['vpc_id'] = str(",").join(vpc_ids)
+        filters['Action'] = 'DescribeVpcs'
 
-        if vpc_id:
-            self.build_list_params(params, vpc_id, 'VpcId')
+        return self.get_list_new(self.build_request_params(filters), ['Vpcs', Vpc])
 
-        if is_default is not None:
-            self.build_list_params(params, is_default, 'IsDefault')
-
-        self.build_list_params(params, pagenumber, 'PageNumber')
-        self.build_list_params(params, pagesize, 'PageSize')
-
-        return self.get_list('DescribeVpcs', params, ['Vpcs', Vpc])
-
-    def modify_vpc(self, vpc_id, vpc_name=None, description=None, user_cidr=None, wait_timeout=None, wait=None):
-
-        """
-        Modify a ECS VPC's (virtual private cloud) attribute in Aliyun Cloud
-        :type vpc_id: string
-        :param vpc_id: Vpc Id of the targeted Vpc to modify
-        :type vpc_name: String
-        :param vpc_name: A VPC name
-        :type description: String
-        :param description: Description about VPC
-        :type user_cidr: String
-        :param user_cidr: User custom cidr in the VPC
-        :type wait: string
-        :param wait: An optional bool value indicating wait for instance to be running before running
-        :type wait_timeout: int
-        :param wait_timeout: An optional int value indicating how long to wait, default 300
-        :return: Returns details of created VPC
-        """
-
-        params = {}
-        self.build_list_params(params, vpc_id, 'VpcId')
-
-        if user_cidr:
-            self.build_list_params(params, user_cidr, 'UserCidr')
-
-        if vpc_name:
-            self.build_list_params(params, vpc_name, 'VpcName')
-
-        if description:
-            self.build_list_params(params, description, 'Description')
-
-        self.get_status('ModifyVpcAttribute', params)
-
-        timeout = 16
-        if str(wait).lower() in ['yes', 'true'] and wait_timeout:
-            timeout = wait_timeout
-        self.wait_for_vpc_status(vpc_id, 'Available', 4, timeout)
-
-        return self.get_vpc_attribute(vpc_id)
+    def modify_vpc(self, params):
+        if not params:
+            return False
+        params['Action'] = 'ModifyVpcAttribute'
+        if self.get_status_new(self.build_request_params(params)):
+            return self.wait_for_vpc_status(params.get('vpc_id'), 'Available', 4, 60)
+        return False
 
     def delete_vpc(self, vpc_id):
-        """
-        Delete Vpc
-        :type vpc_id: string
-        :param vpc_id: Vpc Id of the targeted Vpc to terminate
-        :rtype: bool
-        :return: Return result of deleting.
-       """
-        changed = False
+        return self.get_status_new(self.build_request_params({'vpc_id': vpc_id, 'Action': 'DeleteVpc'}))
 
-        params = {}
-
-        self.build_list_params(params, vpc_id, 'VpcId')
-
-        if self.wait_for_vpc_status(vpc_id, 'Available', 4, 16):
-            changed = self.get_status('DeleteVpc', params)
-
-        return changed
-
-    def create_vswitch(self, zone_id, vpc_id, cidr_block, vswitch_name=None, description=None, client_token=None):
-        """
-        :type zone_id: String
-        :param zone_id: Required parameter. ID of the zone to which an VSwitch belongs
-        :type vpc_id: String
-        :param vpc_id: Required parameter. The VPC ID of the new VSwitch
-        :type cidr_block: String
-        :param cidr_block: Required parameter. The cidr block representing the VSwitch, e.g. 10.0.0.0/8
-        :type vswitch_name: String
-        :param vswitch_name: A VSwitch name
-        :type description: String
-        :param description: Description about VSwitch
-        
-        :return: Return the operation result and details of created VSwitch
-        """
-        params = {}
-
-        self.build_list_params(params, vpc_id, 'VpcId')
-        self.build_list_params(params, zone_id, 'ZoneId')
-        self.build_list_params(params, cidr_block, 'CidrBlock')
-
-        if vswitch_name:
-            self.build_list_params(params, vswitch_name, 'VSwitchName')
-
-        if description:
-                self.build_list_params(params, description, 'Description')
-
-        if client_token:
-            self.build_list_params(params, client_token, 'ClientToken')
-
-        response = self.get_object('CreateVSwitch', params, ResultSet)
-        vsw_id = str(response.vswitch_id)
-        changed = self.wait_for_vswitch_status(vsw_id, 'Available', 4, 16)
-        return changed, self.get_vswitch_attribute(vsw_id)
-
-    def get_all_vswitches(self, vpc_id=None, vswitch_id=None, zone_id=None, is_default=None, pagenumber=1, pagesize=10):
-        """
-        Find Vpc
-        :type vpc_id: String
-        :param vpc_id: The VPC ID of the VSwitch
-        :type vswitch_id: String
-        :param vswitch_id: ID of the specified VSwitch
-        :type zone_id: String
-        :param zone_id: ID of the zone to which an VSwitch belongs
-        :type is_default: bool
-        :param is_default: The vswitch created by system if it is True
-        :type pagenumber: integer
-        :param pagenumber: Page number of the instance status list. The start value is 1. The default value is 1
-        :type pagesize: integer
-        :param pagesize: Sets the number of lines per page for queries per page. The maximum value is 50.
-        The default value is 10
-        :rtype: list
-        :return: Return VSwitch list if VSwitches found along with VSwitch details.
-        """
-        params = {}
-
-        if vpc_id:
-            self.build_list_params(params, vpc_id, 'VpcId')
-
-        if vswitch_id:
-            self.build_list_params(params, vswitch_id, 'VSwitchId')
-
-        if zone_id:
-            self.build_list_params(params, zone_id, 'ZoneId')
-
-        if is_default is not None:
-            self.build_list_params(params, is_default, 'IsDefault')
-
-        self.build_list_params(params, pagenumber, 'PageNumber')
-        self.build_list_params(params, pagesize, 'PageSize')
-
-        return self.get_list('DescribeVSwitches', params, ['VSwitches', VSwitch])
-
-    def get_vswitch_attribute(self, vswitch_id):
-        """
-        method to get specified vswitch attribute 
-        :return: Return vswitch with its attribute
-        """
-
-        response = self.get_all_vswitches(vswitch_id=vswitch_id)
-        if response:
-            return response[0]
-
-        return None
-
-    def modify_vswitch(self, vswitch_id, vswitch_name=None, description=None):
-        """
-        :type vswitch_id: String
-        :param vswitch_id: Required parameter. The VSwitch ID.
-        :type vswitch_name: String
-        :param vswitch_name: A VSwitch name
-        :type description: String
-        :param description: Description about VSwitch
-        
-        :return: Return the operation result and details of modified VSwitch
-        """
-        params = {}
-
-        self.build_list_params(params, vswitch_id, 'VSwitchId')
-
-        if vswitch_name:
-            self.build_list_params(params, vswitch_name, 'VSwitchName')
-
-        if description:
-            self.build_list_params(params, description, 'Description')
-
-        self.get_status('ModifyVSwitchAttribute', params)
-        self.wait_for_vswitch_status(vswitch_id, 'Available', 4, 16)
+    def create_vswitch(self, params):
+        if not params:
+            raise Exception('There is no any parameter used to create a new vswitch.')
+        zone_id = params.get('zone_id', params.get('availability_zone'))
+        if not zone_id:
+            raise Exception("'availability_zone' is required for creating a new vswitch.")
+        params['zone_id'] = zone_id
+        params['Action'] = 'CreateVSwitch'
+        response = self.get_object_new(self.build_request_params(params), ResultSet)
+        vswitch_id = str(response.vswitch_id)
+        self.wait_for_vswitch_status(vswitch_id, 'Available', 4, 120)
         return self.get_vswitch_attribute(vswitch_id)
 
+    def get_all_vswitches(self, filters=None):
+        if not filters:
+            filters = {}
+        filters['Action'] = 'DescribeVSwitches'
+        result = []
+        vswitches = self.get_list_new(self.build_request_params(filters), ['VSwitches', VSwitch])
+        vsw_ids = filters.get('vswitch_ids')
+        if vswitches and vsw_ids:
+            for vsw in vswitches:
+                if vsw.vswitch_id in vsw_ids:
+                    result.append(vsw)
+            return result
+        return vswitches
+
+    def get_vswitch_attribute(self, vswitch_id):
+        response = self.get_all_vswitches({'vswitch_id': vswitch_id})
+        if response:
+            return response[0]
+        return None
+
+    def modify_vswitch(self, params):
+        if not params:
+            return False
+        params['Action'] = 'ModifyVSwitchAttribute'
+
+        if self.get_status_new(self.build_request_params(params)):
+            return self.wait_for_vswitch_status(params.get('vswitch_id'), 'Available', 4, 16)
+        return False
+
     def delete_vswitch(self, vswitch_id):
-        """
-        Delete VSwitch
-        :type vswitch_id : str
-        :param vswitch_id: The Id of vswitch
-        :rtype bool
-        :return: return result of deleting
-        """
-
-        changed = False
-        delay = 4
-        timeout = 120
-
-        params = {}
-
-        self.build_list_params(params, vswitch_id, 'VSwitchId')
-
-        if self.wait_for_vswitch_status(vswitch_id, 'Available', delay, timeout):
-            while timeout > 0:
-                try:
-                    changed = self.get_status('DeleteVSwitch', params)
-                    break
-                except ServerException as e:
-                    if e.error_code == DependencyViolation:
-                        print "Specified vswitch %s has dependent resources - try again" % vswitch_id
-                        timeout -= delay
-                        if timeout <= 0:
-                            raise Exception("Timeout Error: Waiting for deleting specified vswitch %s." % vswitch_id)
-
-                        time.sleep(delay)
-
-        return changed
+        return self.get_status_new(self.build_request_params({'vswitch_id': vswitch_id, 'Action': 'DeleteVSwitch'}))
 
     def delete_vswitch_with_vpc(self, vpc_id):
         """
