@@ -22,7 +22,7 @@ from footmark.ecs.networkinterface import NetworkInterfaceSet
 from footmark.exception import ECSResponseError
 from footmark.resultset import ResultSet
 from aliyunsdkcore.acs_exception.exceptions import ServerException
-# from aliyunsdkecs.request.v20140526.DescribeSecurityGroupsRequest import Request import
+# from aliyunsdkecs.request.v20140526.CreateInstanceRequest import Request import
 # from aliyunsdkcore.auth.composer.rpc_signature_composer import ServerException
 
 
@@ -93,325 +93,7 @@ class ECSConnection(ACSQueryConnection):
                     self.build_list_params(params, value, 'Tag' + str(tag_no) + 'Value')
                     tag_no += 1
 
-    # Instance methods
-
-    def get_all_instances(self, zone_id=None, instance_ids=None, instance_name=None, instance_tags=None,
-                          vpc_id=None, vswitch_id=None, instance_type=None, instance_type_family=None,
-                          instance_network_type=None, private_ip_addresses=None, inner_ip_addresses=None,
-                          public_ip_addresses=None, security_group_id=None, instance_charge_type=None,
-                          spot_strategy=None, internet_charge_type=None, image_id=None, status=None,
-                          io_optimized=None, pagenumber=None, pagesize=100):
-        """
-        Retrieve all the instance associated with your account. 
-
-        :rtype: list
-        :return: A list of  :class:`footmark.ecs.instance`
-
-        """
-        warnings.warn(('The current get_all_instances implementation will be '
-                       'replaced with get_all_instances.'),
-                      PendingDeprecationWarning)
-        instances = []
-        try:
-            params = {}
-            if zone_id:
-                self.build_list_params(params, zone_id, 'ZoneId')
-            if instance_ids:
-                self.build_list_params(params, instance_ids, 'InstanceIds')
-            if instance_name:
-                self.build_list_params(params, instance_name, 'InstanceName')
-            if instance_tags:
-                self.build_tags_params(params, instance_tags, max_tag_number=5)
-            if vpc_id:
-                self.build_list_params(params, vpc_id, 'VpcId')
-            if vswitch_id:
-                self.build_list_params(params, vswitch_id, 'VSwitchId')
-            if instance_type:
-                self.build_list_params(params, instance_type, 'InstanceType')
-            if instance_type_family:
-                self.build_list_params(params, instance_type_family, 'InstanceTypeFamily')
-            if instance_network_type:
-                self.build_list_params(params, instance_network_type, 'InstanceNetworkType')
-            if private_ip_addresses:
-                self.build_list_params(params, private_ip_addresses, 'PrivateIpAddresses')
-            if inner_ip_addresses:
-                self.build_list_params(params, inner_ip_addresses, 'InnerIpAddresses')
-            if public_ip_addresses:
-                self.build_list_params(params, public_ip_addresses, 'PublicIpAddresses')
-            if security_group_id:
-                self.build_list_params(params, security_group_id, 'SecurityGroupId')
-            if spot_strategy:
-                self.build_list_params(params, spot_strategy, 'SpotStrategy')
-            if instance_charge_type:
-                self.build_list_params(params, instance_charge_type, 'InstanceChargeType')
-            if internet_charge_type:
-                self.build_list_params(params, internet_charge_type, 'InternetChargeType')
-            if image_id:
-                self.build_list_params(params, image_id, 'ImageId')
-            if io_optimized:
-                self.build_list_params(params, io_optimized, 'IoOptimized')
-
-            self.build_list_params(params, pagesize, 'PageSize')
-
-            pNum = pagenumber
-            if not pNum:
-                pNum = 1
-            while True:
-                self.build_list_params(params, pNum, 'PageNumber')
-                instance_list = self.get_list('DescribeInstances', params, ['Instances', Instance])
-                for inst in instance_list:
-                    filters = {}
-                    filters['instance_id'] = inst.id
-                    volumes = self.get_all_volumes(filters=filters)
-                    setattr(inst, 'block_device_mapping', volumes)
-                    if inst.security_group_ids:
-                        group_ids = []
-                        security_groups = []
-                        for sg_id in inst.security_group_ids['security_group_id']:
-                            group_ids.append(str(sg_id))
-                            security_groups.append(self.get_security_group_attribute(sg_id))
-                        setattr(inst, 'security_groups', security_groups)
-                    instances.append(inst)
-                if pagenumber or len(instance_list) < pagesize:
-                    break
-                pNum += 1
-
-        except Exception as e:
-            raise e
-
-        return instances
-
-    def describe_instances(self, instance_ids=None, filters=None, max_results=None):
-        """
-        Retrieve all the instance associated with your account.
-
-        :rtype: list
-        :return: A list of  :class:`footmark.ecs.instance`
-
-        """
-        warnings.warn(('The current get_all_instances implementation will be '
-                       'replaced with get_all_instances.'),
-                      PendingDeprecationWarning)
-
-        params = {}
-
-        if instance_ids:
-            self.build_list_params(params, instance_ids, 'InstanceIds')
-        if filters:
-            self.build_filter_params(params, filters)
-        if max_results is not None:
-            params['MaxResults'] = max_results
-
-        try:
-            instances = self.get_list('DescribeInstances', params, ['Instances', Instance])
-        except Exception as ex:
-            instances = None
-
-        return instances
-
-    def start_instances(self, instance_ids=None):
-        """
-        Start the instances specified
-
-        :type instance_ids: list
-        :param instance_ids: A list of strings of the Instance IDs to start
-
-        :rtype: list
-        :return: A list of the instances started
-        """
-        params = {}
-        results = []
-        if instance_ids:
-            if isinstance(instance_ids, six.string_types):
-                instance_ids = [instance_ids]
-            for instance_id in instance_ids:
-                self.build_list_params(params, instance_id, 'InstanceId')
-                if self.get_status('StartInstance', params) and self.wait_for_instance_status(instance_id, "Running", delay=5, timeout=DefaultTimeOut):
-                    results.append(instance_id)
-        return results
-
-    def stop_instances(self, instance_ids=None, force=False):
-        """
-        Stop the instances specified
-
-        :type instance_ids: list
-        :param instance_ids: A list of strings of the Instance IDs to stop
-
-        :type force: bool
-        :param force: Forces the instance to stop
-
-        :rtype: list
-        :return: A list of the instances stopped
-        """
-        params = {}
-        results = []
-        if force:
-            self.build_list_params(params, 'true', 'ForceStop')
-        if instance_ids:
-            if isinstance(instance_ids, six.string_types):
-                instance_ids = [instance_ids]
-            for instance_id in instance_ids:
-                self.build_list_params(params, instance_id, 'InstanceId')
-                self.get_status('StopInstance', params)
-
-            for instance_id in instance_ids:
-                if self.wait_for_instance_status(instance_id, "Stopped", delay=5, timeout=DefaultTimeOut):
-                    results.append(instance_id)
-        return results
-
-    def reboot_instances(self, instance_ids=None, force=False):
-        """
-        Reboot the specified instances.
-
-        :type instance_ids: list
-        :param instance_ids: The instances to terminate and reboot
-
-        :type force: bool
-        :param force: Forces the instance to stop
-
-        """
-        params = {}
-        results = []
-        if force:
-            self.build_list_params(params, 'true', 'ForceStop')
-        if instance_ids:
-            if isinstance(instance_ids, six.string_types):
-                instance_ids = [instance_ids]
-            for instance_id in instance_ids:
-                self.build_list_params(params, instance_id, 'InstanceId')
-                self.get_status('RebootInstance', params)
-
-            for instance_id in instance_ids:
-                if self.wait_for_instance_status(instance_id, "Running", delay=DefaultWaitForInterval, timeout=DefaultTimeOut):
-                    results.append(instance_id)
-
-        return results
-
-    def terminate_instances(self, instance_ids=None, force=False):
-        """
-        Terminate the instances specified
-
-        :type instance_ids: list
-        :param instance_ids: A list of strings of the Instance IDs to terminate
-
-        :type force: bool
-        :param force: Forces the instance to stop
-
-        :rtype: list
-        :return: A list of the instance_ids terminated
-        """
-        params = {}
-        result = []
-        if force:
-            self.build_list_params(params, 'true', 'Force')
-        if instance_ids:
-            if isinstance(instance_ids, six.string_types):
-                instance_ids = [instance_ids]
-            for instance_id in instance_ids:
-                self.build_list_params(params, instance_id, 'InstanceId')
-                if self.delete_instance_retry('DeleteInstance', params, instance_id, delay=3, timeout=DefaultTimeOut):
-                    result.append(instance_id)
-        return result
-
-    def describe_instance_types(self, instance_type_family=None):
-        """
-        Retrieve all the instance types associated with your account.
-
-        :type instance_type_family: str
-        :param instance_type_family: Family name of instance type
-
-        :rtype: list
-        :return: A list of  :class:`footmark.ecs.instance_type`
-
-        """
-        params = {}
-
-        if instance_type_family:
-            self.build_list_params(params, instance_type_family, 'InstanceTypeFamily')
-        return self.get_list('DescribeInstanceTypes', params, ['InstanceTypes', InstanceType])
-
-    def describe_zones(self, zone_id=None):
-        """
-            Retrieve all zones in the region.
-
-            :type zone_id: str
-            :param zone_id: Filter the zone which id is equal to zone_id
-
-            :rtype: list
-            :return: A list of  :class:`footmark.ecs.zone`
-
-        """
-        params = {}
-        self.build_list_params(params, self.region, 'RegionId')
-        zones = self.get_list('DescribeZones', params, ['Zones', Zone])
-        if zone_id:
-            zones = [zone for zone in zones if zone.id == zone_id]
-        return zones
-
-    def describe_instance_type_families(self, generation=None):
-        """
-            Retrieve all the instance type families associated with your account.
-
-            :type generation: str
-            :param generation: Filter the families by generation
-
-            :rtype: list
-            :return: A list of  :class:`footmark.ecs.instance_type_family`
-
-        """
-        params = {}
-        self.build_list_params(params, self.region, 'RegionId')
-        if generation:
-            self.build_list_params(params, generation, "Generation")
-        return self.get_list('DescribeInstanceTypeFamilies', params, ['InstanceTypeFamilies', InstanceTypeFamily])
-
-    def get_all_volumes(self, zone_id=None, volume_ids=None, volume_name=None, filters=None):
-        """
-        Get all Volumes associated with the current credentials.
-
-        :type volume_ids: list
-        :param volume_ids: Optional list of volume ids.  If this list
-                           is present, only the volumes associated with
-                           these volume ids will be returned.
-
-        :type filters: dict
-        :param filters: Optional filters that can be used to limit
-                        the results returned.  Filters are provided
-                        in the form of a dictionary consisting of
-                        filter names as the key and filter values
-                        as the value.  The set of allowable filter
-                        names/values is dependent on the request
-                        being performed.  Check the ECS API guide
-                        for details.
-
-        :type dry_run: bool
-        :param dry_run: Set to True if the operation should not actually run.
-
-        :rtype: list of Volume
-        :return: The requested Volume objects
-        """
-        params = {}
-        if zone_id:
-            self.build_list_params(params, zone_id, 'ZoneId')
-        if volume_ids:
-            ids = "["
-            for id in volume_ids:
-                ids += "\"" + str(id) + "\""
-            ids += "]"
-            self.build_list_params(params, ids, 'DiskIds')
-        if volume_name:
-            self.build_list_params(params, volume_name, 'DiskName')
-        if filters:
-            self.build_filter_params(params, filters)
-        return self.get_list('DescribeDisks', params, ['Disks', Disk])
-
-    def create_instance(self, image_id, instance_type, security_group_id=None, zone_id=None, instance_name=None,
-                        description=None, internet_charge_type=None, max_bandwidth_in=None, max_bandwidth_out=None,
-                        host_name=None, password=None, io_optimized='optimized', system_disk_category=None, system_disk_size=None,
-                        system_disk_name=None, system_disk_description=None, disks=None, vswitch_id=None, private_ip=None,
-                        count=None, allocate_public_ip=None, instance_charge_type=None, period=None,
-                        auto_renew=None, auto_renew_period=None, instance_tags=None, client_token=None,
-                        key_pair_name=None, ram_role_name=None, user_data=None):
+    def create_instances(self, **kwargs):
         """
         create an instance in ecs
 
@@ -527,141 +209,327 @@ class ECSConnection(ACSQueryConnection):
 
         """
 
-        params = {}
-
-        # Datacenter Zone ID
-        if zone_id:
-            self.build_list_params(params, zone_id, 'ZoneId')
-
-        # Operating System
-        self.build_list_params(params, image_id, 'ImageId')
-
-        # Instance Type
-        self.build_list_params(params, instance_type, 'InstanceType')
-
-        # Security Group
-        if security_group_id:
-            self.build_list_params(params, security_group_id, 'SecurityGroupId')
-
-        # Instance Details
-        if instance_name:
-            self.build_list_params(params, instance_name, 'InstanceName')
-
-        # Description of an instance
-        if description:
-            self.build_list_params(params, description, 'Description')
-
-        if internet_charge_type:
-            self.build_list_params(params, internet_charge_type, 'InternetChargeType')
-        if max_bandwidth_in:
-            self.build_list_params(params, max_bandwidth_in, 'InternetMaxBandwidthIn')
-        if max_bandwidth_out:
-            self.build_list_params(params, max_bandwidth_out, 'InternetMaxBandwidthOut')
-
-        # Security Setup
-        if host_name:
-            self.build_list_params(params, host_name, 'HostName')
-
-        # Password to an instance
-        if password:
-            self.build_list_params(params, password, 'Password')
-
-        # input/output optimized
-        if io_optimized is True:
-            self.build_list_params(params, "optimized", 'IoOptimized')
-
-        # Storage - Primary Disk
-        if system_disk_category:
-            self.build_list_params(params, system_disk_category, 'SystemDisk.Category')
-        if system_disk_size:
-            self.build_list_params(params, system_disk_size, 'SystemDisk.Size')
-        if system_disk_name:
-            self.build_list_params(params, system_disk_name, 'SystemDisk.DiskName')
-        if system_disk_description:
-            self.build_list_params(params, system_disk_description, 'SystemDisk.Description')
-
-        # Disks Details
-        disk_no = 1
-        if disks:
-            for disk in disks:
-                if disk:
-                    if 'disk_size' in disk:
-                        self.build_list_params(params, disk['disk_size'], 'DataDisk' + str(disk_no) + 'Size')
-                    if 'disk_category' in disk:
-                        self.build_list_params(params, disk['disk_category'], 'DataDisk' + str(disk_no) + 'Category')
-                    if 'snapshot_id' in disk:
-                        self.build_list_params(params, disk['snapshot_id'], 'DataDisk' + str(disk_no) + 'SnapshotId')
-                    if 'disk_name' in disk:
-                        self.build_list_params(
-                            params, disk['disk_name'], 'DataDisk' + str(disk_no) + 'DiskName')
-                    if 'disk_description' in disk:
-                        self.build_list_params(params, disk['disk_description'],
-                                               'DataDisk' + str(disk_no) + 'Description')
-                    if 'delete_on_termination' in disk:
-                        self.build_list_params(params, disk['delete_on_termination'],
-                                               'DataDisk' + str(disk_no) + 'DeleteWithInstance')
-                    disk_no += 1
-
-        # VPC Switch Id
-        if vswitch_id:
-            self.build_list_params(params, vswitch_id, 'VSwitchId')
-
-        # Private Ip\P
-        if private_ip:
-            self.build_list_params(params, private_ip, 'PrivateIpAddress')
-
-        if instance_charge_type:
-            self.build_list_params(params, instance_charge_type, 'InstanceChargeType')
-
-            # when charge type is PrePaid add Period and Auto Renew Parameters
-            if instance_charge_type == 'PrePaid':
-
-                # period of an Instance
-                if period:
-                    self.build_list_params(params, period, 'Period')
-
-                    # auto renewal of instance
-                    if auto_renew:
-                        self.build_list_params(params, auto_renew, 'AutoRenew')
-                        self.build_list_params(params, auto_renew_period, 'AutoRenewPeriod')
-
-        self.build_tags_params(params, instance_tags, max_tag_number=5)
-
-        if key_pair_name:
-            self.build_list_params(params, key_pair_name, 'KeyPairName')
-
-        if user_data:
-            self.build_list_params(params, base64.b64encode(user_data), 'UserData')
-
-        if allocate_public_ip and not max_bandwidth_out:
-            raise ECSResponseError(error={"message":"The max_bandwidth_out of the specified instance cannot be "
-                                                    "less than 0 when allocating public ip"})
-        instances = []
-
+        instance_ids = []
+        count = kwargs["count"]
+        kwargs = self.format_request_kwargs(**kwargs)
+        if not count:
+            count = 1
         for i in range(count):
             # CreateInstance method call, returns newly created instanceId
-            if client_token:
-                self.build_list_params(params, "%s-%d" % (client_token, i), 'ClientToken')
-            result = self.get_object('CreateInstance', params, ResultSet)
-            instance_id = result.instance_id
+            client_token = kwargs["client_token"]
+            if count > 1:
+                client_token = "{0}-{1}".format(i, client_token)
+            if len(client_token) > 64:
+                client_token = client_token[0:64]
+            kwargs["client_token"] = client_token
+            instance_ids.append(self.get_object_new(self.build_request_params(kwargs), ResultSet).instance_id)
 
-            self.wait_for_instance_status(instance_id, "Stopped", delay=5, timeout=DefaultTimeOut)
-            # Allocate allocate public ip
-            if allocate_public_ip:
-                allocate_public_ip_params = {}
-                self.build_list_params(allocate_public_ip_params, instance_id, 'InstanceId')
-                self.get_status('AllocatePublicIpAddress', allocate_public_ip_params)
+        transition = [].extend(instance_ids)
+        while transition:
+            for inst in self.describe_instances(instance_ids=transition, page_size=100):
+                if str(inst.status).lower() == 'stopped':
+                    transition.remove(inst.id)
 
-            # Start newly created Instance
-            self.start_instances(instance_id)
-            # get instance in running mode
-            self.wait_for_instance_status(instance_id, "Running", delay=5, timeout=DefaultTimeOut)
+        return self.describe_instances(instance_ids=instance_ids, page_size=100)
 
-            instances.append(self.get_instance_details(instance_id))
+    # Instance methods
+    def get_all_instances(self, **kwargs):
+    # def get_all_instances(self, zone_id=None, instance_ids=None, instance_name=None, instance_tags=None,
+    #                       vpc_id=None, vswitch_id=None, instance_type=None, instance_type_family=None,
+    #                       instance_network_type=None, private_ip_addresses=None, inner_ip_addresses=None,
+    #                       public_ip_addresses=None, security_group_id=None, instance_charge_type=None,
+    #                       spot_strategy=None, internet_charge_type=None, image_id=None, status=None,
+    #                       io_optimized=None, pagenumber=None, pagesize=100):
+        """
+        Retrieve all the instance associated with your account. 
 
+        :rtype: list
+        :return: A list of  :class:`footmark.ecs.instance`
+
+        """
+        instances = []
+        params = {}
+        for key, value in kwargs.items():
+            if key == "instance_ids":
+                value = "[" + str(",").join(value) + "]"
+                kwargs[key] = value
+            if key == "tags":
+                tags = []
+                if isinstance(value, dict):
+                    for k, v in value.items():
+                        tags.append({"Key": k, "Value": v})
+                kwargs[key] = value
+            kwargs['Action'] = 'DescribeInstances'
+
+            for inst in self.get_list_new(self.build_request_params(filters), ['Instances', Instance]):
+                filters = {}
+                filters['instance_id'] = inst.id
+                volumes = self.get_all_volumes(filters)
+                setattr(inst, 'block_device_mapping', volumes)
+                # if inst.security_group_ids:
+                #     group_ids = []
+                #     security_groups = []
+                #     for sg_id in inst.security_group_ids['security_group_id']:
+                #         group_ids.append(str(sg_id))
+                #         security_groups.append(self.get_security_group_attribute(sg_id))
+                #     setattr(inst, 'security_groups', security_groups)
+                instances.append(inst)
         return instances
 
-    def attach_key_pair(self, instance_ids, key_pair_name):
+    def describe_instances(self, **kwargs):
+        """
+        Retrieve all the instance associated with your account.
+
+        :rtype: list
+        :return: A list of  :class:`footmark.ecs.instance`
+
+        """
+        instances = []
+        for inst in self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Instances', Instance]):
+            volumes = self.describe_disks(instance_id=inst.id)
+            setattr(inst, 'block_device_mapping', volumes)
+            setattr(inst, 'user_data', base64.b64decode(self.get_object_new(self.build_request_params({"instance_id": inst.id, "Action": "DescribeUserData"}), ResultSet).user_data))
+            instances.append(inst)
+        return instances
+
+    def start_instances(self, **kwargs):
+        """
+        Start the instances specified
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of the Instance IDs to start
+
+        :rtype: list
+        :return: A list of the instances started
+        """
+        instance_ids = kwargs["instance_ids"]
+        kwargs = self.format_request_kwargs(**kwargs)
+        if instance_ids:
+            if isinstance(instance_ids, six.string_types):
+                instance_ids = [instance_ids]
+            for instance_id in instance_ids:
+                kwargs["instance_id"]= instance_id
+                try:
+                    self.get_status_new(self.build_request_params(kwargs))
+                except ServerException as e:
+                    if e.error_code == "IncorrectInstanceStatus":
+                        target = self.describe_instances(instance_ids=[instance_id])
+                        if target and str(target[0].status).lower() == "running":
+                            continue
+                    raise e
+            while instance_ids:
+                for inst in self.describe_instances(instance_ids=instance_ids):
+                    if str(inst.status).lower() == "running":
+                        instance_ids.remove(inst.id)
+            return True
+        return False
+
+    def stop_instances(self, **kwargs):
+        """
+        Stop the instances specified
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of the Instance IDs to stop
+
+        :type force: bool
+        :param force: Forces the instance to stop
+
+        :rtype: list
+        :return: A list of the instances stopped
+        """
+        instance_ids = kwargs["instance_ids"]
+        kwargs = self.format_request_kwargs(**kwargs)
+        if instance_ids:
+            if isinstance(instance_ids, six.string_types):
+                instance_ids = [instance_ids]
+            for instance_id in instance_ids:
+                kwargs["instance_id"]= instance_id
+                try:
+                    self.get_status_new(self.build_request_params(kwargs))
+                except ServerException as e:
+                    if e.error_code == "IncorrectInstanceStatus":
+                        target = self.describe_instances(instance_ids=[instance_id])
+                        if target and str(target[0].status).lower() == "stopped":
+                            continue
+                    raise e
+            while instance_ids:
+                for inst in self.describe_instances(instance_ids=instance_ids):
+                    if str(inst.status).lower() == "stopped":
+                        instance_ids.remove(inst.id)
+            return True
+        return False
+
+    def reboot_instances(self, **kwargs):
+        """
+        Reboot the specified instances.
+
+        :type instance_ids: list
+        :param instance_ids: The instances to terminate and reboot
+
+        :type force: bool
+        :param force: Forces the instance to stop
+
+        """
+        instance_ids = kwargs["instance_ids"]
+        kwargs = self.format_request_kwargs(**kwargs)
+        if instance_ids:
+            if isinstance(instance_ids, six.string_types):
+                instance_ids = [instance_ids]
+            for instance_id in instance_ids:
+                kwargs["instance_id"]= instance_id
+                try:
+                    self.get_status_new(self.build_request_params(kwargs))
+                except ServerException as e:
+                    if e.error_code == "IncorrectInstanceStatus":
+                        target = self.describe_instances(instance_ids=[instance_id])
+                        if target and str(target[0].status).lower() == "stopped":
+                            self.start_instances(instance_ids=[instance_id])
+                    raise e
+            while instance_ids:
+                for inst in self.describe_instances(instance_ids=instance_ids):
+                    status = str(inst.status).lower()
+                    if status == "running":
+                        instance_ids.remove(inst.id)
+                    if status == "stopped":
+                        self.start_instances(instance_ids=[inst.id])
+            return True
+        return False
+
+    def delete_instances(self, **kwargs):
+        """
+        Delete the instances specified
+
+        :type instance_ids: list
+        :param instance_ids: A list of strings of the Instance IDs to terminate
+
+        :type force: bool
+        :param force: Forces the instance to stop
+
+        :rtype: list
+        :return: A list of the instance_ids terminated
+        """
+        instance_ids = kwargs["instance_ids"]
+        kwargs = self.format_request_kwargs(**kwargs)
+        if instance_ids:
+            if isinstance(instance_ids, six.string_types):
+                instance_ids = [instance_ids]
+            for instance_id in instance_ids:
+                kwargs["instance_id"]= instance_id
+                self.get_status_new(self.build_request_params(kwargs))
+            while instance_ids:
+                if self.describe_instances(instance_ids=instance_ids):
+                    continue
+                break
+            return True
+        return False
+
+    def allocate_public_ip_address(self, **kwargs):
+        timeout = 30
+        while timeout:
+            try:
+                return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+            except ServerException as e:
+                if e.error_code == "IncorrectInstanceStatus":
+                    time.sleep(3)
+                    timeout -= 3
+        return False
+
+    def describe_instance_types(self, instance_type_family=None):
+        """
+        Retrieve all the instance types associated with your account.
+
+        :type instance_type_family: str
+        :param instance_type_family: Family name of instance type
+
+        :rtype: list
+        :return: A list of  :class:`footmark.ecs.instance_type`
+
+        """
+        params = {}
+
+        if instance_type_family:
+            self.build_list_params(params, instance_type_family, 'InstanceTypeFamily')
+        return self.get_list('DescribeInstanceTypes', params, ['InstanceTypes', InstanceType])
+
+    def describe_zones(self, zone_id=None):
+        """
+            Retrieve all zones in the region.
+
+            :type zone_id: str
+            :param zone_id: Filter the zone which id is equal to zone_id
+
+            :rtype: list
+            :return: A list of  :class:`footmark.ecs.zone`
+
+        """
+        params = {}
+        self.build_list_params(params, self.region, 'RegionId')
+        zones = self.get_list('DescribeZones', params, ['Zones', Zone])
+        if zone_id:
+            zones = [zone for zone in zones if zone.id == zone_id]
+        return zones
+
+    def describe_instance_type_families(self, generation=None):
+        """
+            Retrieve all the instance type families associated with your account.
+
+            :type generation: str
+            :param generation: Filter the families by generation
+
+            :rtype: list
+            :return: A list of  :class:`footmark.ecs.instance_type_family`
+
+        """
+        params = {}
+        self.build_list_params(params, self.region, 'RegionId')
+        if generation:
+            self.build_list_params(params, generation, "Generation")
+        return self.get_list('DescribeInstanceTypeFamilies', params, ['InstanceTypeFamilies', InstanceTypeFamily])
+
+    def describe_disks(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Disks', Disk])
+
+    def get_all_volumes(self, zone_id=None, volume_ids=None, volume_name=None, filters=None):
+        """
+        Get all Volumes associated with the current credentials.
+
+        :type volume_ids: list
+        :param volume_ids: Optional list of volume ids.  If this list
+                           is present, only the volumes associated with
+                           these volume ids will be returned.
+
+        :type filters: dict
+        :param filters: Optional filters that can be used to limit
+                        the results returned.  Filters are provided
+                        in the form of a dictionary consisting of
+                        filter names as the key and filter values
+                        as the value.  The set of allowable filter
+                        names/values is dependent on the request
+                        being performed.  Check the ECS API guide
+                        for details.
+
+        :type dry_run: bool
+        :param dry_run: Set to True if the operation should not actually run.
+
+        :rtype: list of Volume
+        :return: The requested Volume objects
+        """
+        params = {}
+        if zone_id:
+            self.build_list_params(params, zone_id, 'ZoneId')
+        if volume_ids:
+            ids = "["
+            for id in volume_ids:
+                ids += "\"" + str(id) + "\""
+            ids += "]"
+            self.build_list_params(params, ids, 'DiskIds')
+        if volume_name:
+            self.build_list_params(params, volume_name, 'DiskName')
+        if filters:
+            self.build_filter_params(params, filters)
+        return self.get_list('DescribeDisks', params, ['Disks', Disk])
+
+    def attach_key_pair(self, **kwargs):
         """
         Attach a key pair to a ecs instance
 
@@ -673,18 +541,9 @@ class ECSConnection(ACSQueryConnection):
 
         :return:
         """
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        params = {}
-        # Instance Id, which is to be added to a security group
-        self.build_list_params(params, instance_ids, 'InstanceIds')
-
-        # Security Group ID, an already existing security group, to which instance is added
-        self.build_list_params(params, key_pair_name, 'KeyPairName')
-
-        # Method Call, to perform adding action
-        return self.get_status('AttachKeyPair', params)
-
-    def detach_key_pair(self, instance_ids, key_pair_name):
+    def detach_key_pair(self, **kwargs):
         """
         Attach a key pair to a ecs instance
 
@@ -696,18 +555,9 @@ class ECSConnection(ACSQueryConnection):
 
         :return:
         """
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        params = {}
-        # Instance Id, which is to be added to a security group
-        self.build_list_params(params, instance_ids, 'InstanceIds')
-
-        # Security Group ID, an already existing security group, to which instance is added
-        self.build_list_params(params, key_pair_name, 'KeyPairName')
-
-        # Method Call, to perform adding action
-        return self.get_status('DetachKeyPair', params)
-
-    def modify_instances(self, instance_ids, name=None, description=None, host_name=None, password=None):
+    def modify_instance_attribute(self, **kwargs):
         """
         modify the instance attributes such as name, description, password and host_name
 
@@ -723,23 +573,7 @@ class ECSConnection(ACSQueryConnection):
         :param password: Instance Password
         :return: A list of the instance_ids modified
         """
-        changed = False
-        params = {}
-
-        if name:
-            self.build_list_params(params, name, 'InstanceName')
-        if description:
-            self.build_list_params(params, description, 'Description')
-        if password:
-            self.build_list_params(params, password, 'Password')
-        if host_name:
-            self.build_list_params(params, host_name, 'HostName')
-
-        for id in instance_ids:
-            self.build_list_params(params, id, 'InstanceId')
-            changed = self.get_status('ModifyInstanceAttribute', params)
-
-        return changed
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
     def get_instance_status(self, zone_id=None, pagenumber=None, pagesize=None):
         """
@@ -779,7 +613,7 @@ class ECSConnection(ACSQueryConnection):
 
         return False, results
 
-    def join_security_group(self, instance_id, group_id):
+    def join_security_group(self, **kwargs):
         """
         Assign an existing instance to a pre existing security group
 
@@ -791,18 +625,9 @@ class ECSConnection(ACSQueryConnection):
 
         :return: Success message, confirming joining security group or error message if any
         """
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        params = {}
-        # Instance Id, which is to be added to a security group
-        self.build_list_params(params, instance_id, 'InstanceId')
-
-        # Security Group ID, an already existing security group, to which instance is added
-        self.build_list_params(params, group_id, 'SecurityGroupId')
-
-        # Method Call, to perform adding action
-        return self.get_status('JoinSecurityGroup', params)
-
-    def leave_security_group(self, instance_id, group_id):
+    def leave_security_group(self, **kwargs):
         """
         Remove an existing instance from given security group
 
@@ -814,17 +639,10 @@ class ECSConnection(ACSQueryConnection):
 
         :return: Success message, confirming joining security group or error message if any
         """
-        params = {}
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        # Security Group ID, an already existing security group, from which instance is removed
-        self.build_list_params(params, group_id, 'SecurityGroupId')
-        # Instance Id to be removed from a security group
-        self.build_list_params(params, instance_id, 'InstanceId')
-
-        # Method Call, to perform adding action
-        return self.get_status('LeaveSecurityGroup', params)
-
-    def create_security_group(self, group_name=None, description=None, group_tags=None, vpc_id=None, client_token=None):
+    # def create_security_group(self, **kwargs):
+    def create_security_group(self, **kwargs):
         """
         create and authorize security group in ecs
 
@@ -847,39 +665,9 @@ class ECSConnection(ACSQueryConnection):
             the the group created/authorized. If the group was not
             created and authorized, "changed" will be set to False.
         """
-
-        params = {}
-
-        # Security Group Name
-        self.build_list_params(params, group_name, 'SecurityGroupName')
-
-        # Security Group VPC Id
-        if vpc_id:
-            self.build_list_params(params, vpc_id, 'VpcId')
-
-        # Security Group Description
-        self.build_list_params(params, description, 'Description')
-
-        if client_token:
-            self.build_list_params(params, client_token, 'ClientToken')
-
-        # Instance Tags
-        tagno = 1
-        if group_tags:
-            for group_tag in group_tags:
-                if group_tag:
-                    if 'tag_key' in group_tag:
-                        self.build_list_params(params, group_tag[
-                            'tag_key'], 'Tag' + str(tagno) + 'Key')
-                    if 'tag_value' in group_tag:
-                        self.build_list_params(params, group_tag[
-                            'tag_value'], 'Tag' + str(tagno) + 'Value')
-                    tagno = tagno + 1
-
-        # CreateSecurityGroup method call, returns newly created security group id
-        response = self.get_object('CreateSecurityGroup', params, ResultSet)
+        response = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet)
         if response:
-            return self.get_security_group_attribute(group_id=response.security_group_id)
+            return self.describe_security_group_attribute(security_group_id=response.security_group_id)
 
         return None
 
@@ -1011,7 +799,7 @@ class ECSConnection(ACSQueryConnection):
 
         return inbound_failed_rules, outbound_failed_rules, result_details
 
-    def get_security_group_attribute(self, group_id=None, nic_type=None, direction='all'):
+    def describe_security_group_attribute(self, **kwargs):
         """
         Querying Security Group List returns the basic information about all
               user-defined security groups.
@@ -1028,40 +816,16 @@ class ECSConnection(ACSQueryConnection):
         :rtype: dict
         :return: Returns a dictionary of security group information
 
-                """
+        """
+        return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), SecurityGroup)
 
-        params = {}
-        if group_id:
-            self.build_list_params(params, group_id, 'SecurityGroupId')
-        if nic_type:
-            self.build_list_params(params, nic_type, 'NicType')
-        if direction:
-            self.build_list_params(params, direction, 'Direction')
-
-        return self.get_object('DescribeSecurityGroupAttribute', params, SecurityGroup)
-
-    def get_all_security_groups(self, filters=None):
+    def describe_security_groups(self, **kwargs):
         groups = []
-        if not filters:
-            filters = {}
-        filters['Action'] = 'DescribeSecurityGroups'
-        count = 1
-        tags = filters.get("tags", filters.get('Tags'))
-        if tags:
-            for key, value in tags:
-                filters['tag_{0}_key'.format(count)] = key
-                filters['tag_{0}_value'.format(count)] = value
-                count = count + 1
-                if count > 5:
-                    break
-        results = self.get_list_new(self.build_request_params(filters), ['SecurityGroups', SecurityGroup])
-        if results:
-            for group in results:
-                groups.append(self.get_security_group_attribute(group_id=group.id))
-            return groups
-        return results
+        for group in self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['SecurityGroups', SecurityGroup]):
+            groups.append(self.describe_security_group_attribute(security_group_id=group.id))
+        return groups
 
-    def delete_security_group(self, group_id):
+    def delete_security_group(self, **kwargs):
         """
         Delete Security Group , delete security group inside particular region.
 
@@ -1072,17 +836,14 @@ class ECSConnection(ACSQueryConnection):
         :return: A method return result of after successfully deletion of security group
         """
         # Call DescribeSecurityGroups method to get response for all running instances
-        params = {}
-        if group_id:
-            self.build_list_params(params, group_id, 'SecurityGroupId')
-
+        kwargs = self.format_request_kwargs(**kwargs)
         delay = 5
         timeout = DefaultTimeOut
         while True:
             try:
-                self.get_status('DeleteSecurityGroup', params)
-                group = self.get_security_group_attribute(group_id=group_id)
-                if group is None or not group.id:
+                self.get_status_new(self.build_request_params(kwargs))
+                group = self.describe_security_group_attribute(**kwargs)
+                if not group or not group.id:
                     return True
             except ServerException as e:
                 if str(e.error_code) == "InvalidSecurityGroupId.NotFound":
@@ -1094,11 +855,9 @@ class ECSConnection(ACSQueryConnection):
             timeout -= delay
             if timeout <= 0:
                 raise Exception("Timeout: Waiting for deleting Security Group {0}, time-consuming {1} seconds. "
-                                "Error: {2}".format(group_id, DefaultTimeOut-timeout, e))
+                                "Error: {2}".format(kwargs["security_group_id"], DefaultTimeOut-timeout, e))
 
-    def create_disk(self, zone_id, disk_name=None, description=None,
-                    disk_category=None, size=None, disk_tags=None,
-                    snapshot_id=None, client_token=None):
+    def create_disk(self, **kwargs):
         """
         create an disk in ecs
 
@@ -1140,64 +899,18 @@ class ECSConnection(ACSQueryConnection):
         :rtype: dict
         :return: Returns a dictionary of disk information
         """
-        params = {}
-        results = []
-        changed = False
+        rs = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet)
 
         # Zone Id
-        self.build_list_params(params, zone_id, 'ZoneId')
+        return self.describe_disk_attribute(disk_id=rs.disk_id)
 
-        # DiskName
-        if disk_name:
-            self.build_list_params(params, disk_name, 'DiskName')
-
-        # Description of disk
-        if description:
-            self.build_list_params(params, description, 'Description')
-
-        # Disk Category
-        if disk_category:
-            self.build_list_params(params, disk_category, 'DiskCategory')
-
-        # Size of Disk
-        if size:
-            self.build_list_params(params, size, 'Size')
-
-            # Disk Tags
-        tag_no = 1
-        if disk_tags:
-            for disk_tag in disk_tags:
-                if disk_tag:
-                    if 'tag_key' and 'tag_value' in disk_tag:
-                        if (disk_tag['tag_key'] is not None) and (disk_tag['tag_value'] is not None):
-                            self.build_list_params(params, disk_tag[
-                                'tag_key'], 'Tag' + str(tag_no) + 'Key')
-                            self.build_list_params(params, disk_tag[
-                                'tag_value'], 'Tag' + str(tag_no) + 'Value')
-                            tag_no += 1
-
-                            # Snapshot Id
-        if snapshot_id:
-            self.build_list_params(params, snapshot_id, 'SnapshotId')
-
-        if client_token:
-            self.build_list_params(params, client_token, 'ClientToken')
-
-        rs = self.get_object('CreateDisk', params, ResultSet)
-
-        return self.get_volume_attribute(str(rs.disk_id))
-
-    def get_volume_attribute(self, disk_id):
-        disks = self.get_all_volumes(volume_ids=[disk_id])
+    def describe_disk_attribute(self, disk_id):
+        disks = self.describe_disks(disk_ids=[disk_id])
         if disks:
             return disks[0]
         return None
 
-        rs = self.get_object('CreateDisk', params, ResultSet)
-
-        return self.get_volume_attribute(str(rs.disk_id))
-
-    def attach_disk(self, disk_id, instance_id, delete_with_instance=None):
+    def attach_disk(self, **kwargs):
         """
         Method to attach a disk to instance
 
@@ -1213,30 +926,10 @@ class ECSConnection(ACSQueryConnection):
         :return: A list of the total number of security groups, region ID of the security group,
                  the ID of the VPC to which the security group belongs
         """
-        params = {}
+        self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return self.wait_for_disk_status(disk_id=kwargs["disk_id"], status="in_use", delay=5, timeout=120)
 
-        # Instance Id, which is used to attach disk
-        self.build_list_params(params, instance_id, 'InstanceId')
-
-        # Disk Id, the disk_id to be mapped
-        self.build_list_params(params, disk_id, 'DiskId')
-
-        # should the disk be deleted with instance
-        if delete_with_instance:
-            if str(delete_with_instance).lower().strip() == 'yes':
-                delete_with_instance = 'true'
-            elif str(delete_with_instance).lower().strip() == 'no':
-                delete_with_instance = 'false'
-            else:
-                delete_with_instance = str(delete_with_instance).lower().strip()
-
-            self.build_list_params(params, delete_with_instance, 'DeleteWithInstance')
-
-        # Method Call, to perform adding action
-        self.get_status('AttachDisk', params)
-        return self.wait_for_disk_status(disk_id=disk_id, status="in_use", delay=5, timeout=120)
-
-    def detach_disk(self, disk_id, instance_id):
+    def detach_disk(self, **kwargs):
         """
         Method to detach a disk to instance
 
@@ -1245,49 +938,10 @@ class ECSConnection(ACSQueryConnection):
 
         :return: Return status of Operation
         """
-        params = {}
+        self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return self.wait_for_disk_status(disk_id=kwargs["disk_id"], status="available", delay=5, timeout=120)
 
-        # Instance Id, which is to be added to a detach disk
-        self.build_list_params(params, instance_id, 'InstanceId')
-
-        # Disk Id, the disk_id to be mapped
-        self.build_list_params(params, disk_id, 'DiskId')
-
-        self.get_status('DetachDisk', params)
-        return self.wait_for_disk_status(disk_id=disk_id, status="available", delay=5, timeout=120)
-
-    def retrieve_instance_for_disk(self, disk_id):
-        # method is used to retrieve instance_id from disk_id, it is required in detach disk.
-        # In detach disk instance id is retrieved from disk, it is not taken from ansible.
-        results = []
-
-        instance_id = None
-        disk_portable = None
-        disk_status = None
-        disks = None
-        try:
-            disks = self.get_all_volumes(volume_ids=[disk_id])
-            if not disks or len(disks) < 1 or not disks[0]:
-                return False, {"Error": "The specified disk %s is not found." % disk_id}
-
-            # wait until disk status becomes specified
-            if disk_status == str(disks[0].status).strip().lower():
-                return True, None
-
-            disk = disks[0]
-            instance_id = str(disk.instance_id)
-            disk_portable = str(disk.portable)
-            disk_status = str(disk.status)
-
-        except ServerException as e:
-            results.append({"Error Code": e.error_code, "Error Message": e.message,
-                            "RequestId": e.request_id, "Http Status": e.http_status})
-        except Exception as e:
-            results.append({"Error Message::::": e, "disks::::": disks.disks})
-
-        return instance_id, disk_status, disk_portable, results
-
-    def delete_disk(self, disk_id):
+    def delete_disk(self, **kwargs):
         """
         Method to delete a disk
 
@@ -1296,18 +950,15 @@ class ECSConnection(ACSQueryConnection):
 
         :return: Return status of Operation
         """
-        params = {}
-
-        # the disk to be deleted
-        self.build_list_params(params, disk_id, 'DiskId')
+        kwargs = self.format_request_kwargs(**kwargs)
 
         delay = 3
         timeout = DefaultTimeOut
 
         while True:
             try:
-                self.get_status('DeleteDisk', params)
-                volume = self.get_volume_attribute(disk_id)
+                self.get_status_new(self.build_request_params(**kwargs))
+                volume = self.describe_disk_attribute(disk_id=kwargs["disk_id"])
                 if volume is None or not volume.id:
                     return True
             except ServerException as e:
@@ -1319,9 +970,9 @@ class ECSConnection(ACSQueryConnection):
             timeout -= delay
             if timeout <= 0:
                 raise Exception("Timeout: Waiting for deleting volume {0}, time-consuming {1} seconds. "
-                                "Error: {2}".format(disk_id, DefaultTimeOut, e))
+                                "Error: {2}".format(kwargs["disk_id"], DefaultTimeOut, e))
 
-    def modify_disk(self, disk_id, disk_name=None, description=None, delete_with_instance=None):
+    def modify_disk_attribute(self, **kwargs):
         """
         Method to delete a disk
 
@@ -1330,28 +981,7 @@ class ECSConnection(ACSQueryConnection):
 
         :return: Return status of Operation
         """
-        params = {}
-
-        # the disk to be deleted
-        self.build_list_params(params, disk_id, 'DiskId')
-
-        if disk_name:
-            self.build_list_params(params, disk_name, 'DiskName')
-
-        if description:
-            self.build_list_params(params, description, 'Description')
-
-        if delete_with_instance:
-            if str(delete_with_instance).lower().strip() == 'yes':
-                delete_with_instance = 'true'
-            elif str(delete_with_instance).lower().strip() == 'no':
-                delete_with_instance = 'false'
-            else:
-                delete_with_instance = str(delete_with_instance).lower().strip()
-
-            self.build_list_params(params, delete_with_instance, 'DeleteWithInstance')
-
-        return self.get_status('ModifyDiskAttribute', params)
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
     def create_image(self, snapshot_id=None, image_name=None, image_version=None, description=None,
                      instance_id=None, disk_mapping=None, client_token=None, wait=None,
@@ -1648,7 +1278,7 @@ class ECSConnection(ACSQueryConnection):
         tm = timeout
         try:
             while True:
-                volume = self.get_volume_attribute(disk_id)
+                volume = self.describe_disk_attribute(disk_id)
                 if volume and str(volume.status).lower() in [status, str(status).lower()]:
                     return True
 
@@ -1793,3 +1423,9 @@ class ECSConnection(ACSQueryConnection):
 
             time.sleep(delay)
         return False
+
+    def add_tags(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def remove_tags(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))

@@ -1,3 +1,14 @@
+## 1.6.0 (Unreleased)
+IMPROVEMENTS:
+
+- Add format_request_kwargs method to make footmark more automatic ([#8](https://github.com/alibaba/footmark/pull/8))
+
+## 1.5.1 (October 19, 2018)
+
+BUG FIXES:
+
+  * Modify setup.py to set the specified sdk version ([#6](https://github.com/alibaba/footmark/pull/6))
+
 ## 1.5.0 (July 4, 2018)
 
 IMPROVEMENTS:

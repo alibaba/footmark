@@ -14,6 +14,9 @@ from footmark.exception import FootmarkServerError
 from footmark.provider import Provider
 import json
 import yaml
+import inspect
+import base64
+import uuid
 from footmark.resultset import ResultSet
 
 from pprint import pprint
@@ -96,22 +99,14 @@ class ACSQueryConnection(ACSAuthConnection):
             raise Exception("Importing {0} request got an error: {1}.".format(action, e))
 
     def build_request_params(self, filters):
-        params = {}
-
-        if not filters:
-            return params
-
-        if not isinstance(filters, dict):
-            raise Exception("Error: 'filters' must be a dict. Current value is: {0}.".format(filters))
-
-        if not filters.get('Action', filters.get('action')):
-            raise Exception("'Action' is required for this request.")
+        action = filters['Action']
+        params = {'Action': action}
 
         # get all of the specified request's method names dict, like {'InstanceId':'set_InstanceId', 'Name':'set_Name'}
         methods = {}
-        request = self.import_request(filters.get('Action', filters.get('action')))
+        request = self.import_request(action)
         if not request:
-            raise Exception("There is no available request about action {0}.".format(filters.get('Action', filters.get('action'))))
+            raise Exception("There is no available request about action {0}.".format(action))
         for name in dir(request):
             if str(name).startswith('set_') and name[4] <= 'Z':
                 methods[str(name[4:]).lower()] = name
@@ -124,8 +119,6 @@ class ACSQueryConnection(ACSAuthConnection):
                 name = str(key).lower().replace("-", "").replace("_", "")
                 if name in methods:
                     params[methods[name]] = value
-                if key in ['Action', 'action']:
-                    params['Action'] = value
         return params
 
     def make_request(self, action, params=None):
@@ -317,6 +310,74 @@ class ACSQueryConnection(ACSAuthConnection):
                 raise e
 
         return None
+
+    def convert_tags(self, tags):
+        result = []
+        if isinstance(tags, dict):
+            for k, v in tags.items():
+                result.append({"Key": k, "Value": v})
+        return result
+
+    def underscore_to_studlycaps(self, text):
+        """
+        Convert a under_score string to studly_caps, like: aaa_bbb -> AaaBbb 
+        :param text: 
+        :return: 
+        """
+        res = ""
+        for key in filter(None, str(text).lower().split('_')):
+            res += str(key[0]).upper() + key[1:]
+        return res
+
+    def get_current_function_name(self, is_studly_caps=False):
+        """
+        Get the current function name and the return can be StudlyCaps.
+        E.G: The current name is "aaa_bbb_ccc", if is_studly_caps, return AaaBbbCcc, else return aaa_bbb_ccc
+        :param is_studly_caps: 
+        :return: 
+        """
+        res = inspect.stack()[1][3]
+        if is_studly_caps:
+            return self.underscore_to_studlycaps(res)
+        return res
+
+    def build_client_token(self, prefix=None):
+        client_token = str("Footmark{0}-{1}".format(prefix,uuid.uuid1()))
+        if len(client_token) > 64:
+            client_token = client_token[0:64]
+        return client_token
+
+    def format_request_kwargs(self, **kwargs):
+        for key, value in kwargs.items():
+            # Format the following parameter to JSON
+            if key in ["instance_ids", "disk_ids"]:
+                if not value:
+                    continue
+                kwargs[key] = json.dumps(value)
+            # Convert Tags
+            if key == "tags":
+                kwargs[key] = self.convert_tags(value)
+
+            # Base64 userdata
+            if key == "user_data":
+                if not value:
+                    continue
+                try:
+                    if base64.b64encode(base64.b64decode(value)) != value:
+                        kwargs[key] = base64.b64encode(value)
+                except TypeError:
+                    kwargs[key] = base64.b64encode(value)
+
+        # Add 'Action' parameter. Using inspect.stack()[1][3] gets invoking method name
+        action = self.underscore_to_studlycaps(inspect.stack()[1][3])
+        if action in ["CreateInstances", "StartInstances", "StopInstances", "RebootInstances", "DeleteInstances"]:
+            action = action[:-1]
+        kwargs["Action"] = action
+
+        # Add 'ClientToken' parameter
+        kwargs["client_token"] = self.build_client_token(action)
+
+        return kwargs
 
     def get_list_new(self, params, markers):
         try:

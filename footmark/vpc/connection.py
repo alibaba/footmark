@@ -111,7 +111,18 @@ class VPCConnection(ACSQueryConnection):
         return False
 
     def delete_vpc(self, vpc_id):
-        return self.get_status_new(self.build_request_params({'vpc_id': vpc_id, 'Action': 'DeleteVpc'}))
+        retry = 5
+        while retry:
+            try:
+                return self.get_status_new(self.build_request_params({'vpc_id': vpc_id, 'Action': 'DeleteVpc'}))
+            except ServerException as e:
+                if str(e.error_code) == "Forbbiden":
+                    time.sleep(5)
+                    retry -= 1
+                    continue
+                raise e
+        return False
+
 
     def create_vswitch(self, params):
         if not params:
