@@ -46,13 +46,13 @@ class SecurityGroup(TaggedECSObject):
         """
         Terminate the security group
         """
-        return self.connection.delete_security_group(self.id)
+        return self.connection.delete_security_group(security_group_id=self.id)
 
     def get(self):
         """
         Terminate the security group
         """
-        return self.connection.get_security_group_attribute(self.id)
+        return self.connection.describe_security_group_attribute(security_group_id=self.id)
 
     def read(self):
         group = {}

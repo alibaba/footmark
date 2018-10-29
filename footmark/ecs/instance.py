@@ -107,7 +107,7 @@ class Instance(TaggedECSObject):
                          raise a ValueError exception if no data is
                          returned from ECS.
         """
-        rs = self.connection.get_all_instances([self.id])
+        rs = self.connection.describe_instances(instance_ids=[self.id])
         if len(rs) > 0:
             for r in rs:
                 if r.id == self.id:
@@ -120,7 +120,7 @@ class Instance(TaggedECSObject):
         """
         Start the instance.
         """
-        return self.connection.start_instances([self.id])
+        return self.connection.start_instances(instance_ids=[self.id])
 
     def stop(self, force=False):
         """
@@ -132,7 +132,7 @@ class Instance(TaggedECSObject):
         :rtype: list
         :return: A list of the instances stopped
         """
-        return self.connection.stop_instances([self.id], force)
+        return self.connection.stop_instances(instance_ids=[self.id], force_stop=force)
 
     def reboot(self, force=False):
         """
@@ -141,9 +141,9 @@ class Instance(TaggedECSObject):
         :type force: bool
         :param force: Forces the instance to stop
         """
-        return self.connection.reboot_instances([self.id], force)
+        return self.connection.reboot_instances(instance_ids=[self.id], force_stop=force)
 
-    def modify(self, name=None, description=None, host_name=None, password=None):
+    def modify(self, name=None, description=None, host_name=None, password=None, user_data=None):
         """
         Modify the instance.
 
@@ -156,9 +156,12 @@ class Instance(TaggedECSObject):
         :type password: str
         :param password: Instance Password
         """
-        if self.name != name or self.description != description or self.host_name != host_name or password:
-            return self.connection.modify_instances([self.id], name=name, description=description,
-                                                    host_name=host_name, password=password)
+        if self.name != name or self.description != description or self.host_name != host_name or self.user_data != user_data or password:
+            if not password:
+                return self.connection.modify_instance_attribute(instance_id=self.id, instance_name=name, description=description,
+                                                                 host_name=host_name, user_data=user_data)
+            return self.connection.modify_instance_attribute(instance_id=self.id, instance_name=name, description=description,
+                                                             password=password, host_name=host_name, user_data=user_data)
         return False
 
     def terminate(self, force=False):
@@ -168,7 +171,7 @@ class Instance(TaggedECSObject):
         :type force: bool
         :param force: Forces the instance to terminate
         """
-        return self.connection.terminate_instances([self.id], force)
+        return self.connection.delete_instances(instance_ids=[self.id], force=force)
 
     def join_security_group(self, security_group_id):
         """
@@ -202,6 +205,39 @@ class Instance(TaggedECSObject):
         detach one key pair
         """
         return self.connection.detach_key_pair([self.id], self.key_pair_name)
+
+    def add_tags(self, tags):
+        """
+        Add tags
+        """
+        remain = {}
+        if tags:
+            for key, value in tags.items():
+                if key in self.tags.keys() and value == self.tags[key]:
+                    continue
+                remain[key] = value
+        if remain:
+            return self.connection.add_tags(resource_id=self.id, resource_type="instance", tags=remain)
+        return False
+
+    def remove_tags(self, tags):
+        """
+        remove tags
+        """
+        remain = {}
+        if tags:
+            for key, value in tags.items():
+                if key not in self.tags.keys():
+                    continue
+                remain[key] = value
+        if remain:
+            return self.connection.remove_tags(resource_id=self.id, resource_type="instance", tags=tags)
+        return False
+
+    def allocate_public_ip(self):
+        if self.public_ip_address:
+            return False
+        return self.connection.allocate_public_ip_address(instance_id=self.id)
 
     def read(self):
         instance = {"gpu": {"amount": 0, "spec": ""}}
@@ -245,9 +281,10 @@ class Instance(TaggedECSObject):
             if name == "network_interfaces":
                 value = value["network_interface"]
 
-            if name == "public_ip_address":
-                if value and value["ip_address"]:
-                    value = value["ip_address"][0]
+            # if name == "public_ip_address":
+            #     print "******* {0}".format(value)
+            #     if value and value["ip_address"]:
+            #         value = value["ip_address"][0]
 
             if name == "inner_ip_address":
                 if value and value["ip_address"]:
