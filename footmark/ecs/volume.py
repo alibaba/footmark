@@ -97,7 +97,9 @@ class Disk(TaggedECSObject):
         :type instance_id: str
         :param instance_id: The Id of instance.
         """
-        return self.connection.attach_disk(self.id, instance_id, delete_with_instance=delete_with_instance)
+        if instance_id and instance_id != self.instance_id:
+            return self.connection.attach_disk(disk_id=self.id, instance_id=instance_id, delete_with_instance=delete_with_instance)
+        return False
 
     def detach(self, instance_id):
         """
@@ -106,7 +108,9 @@ class Disk(TaggedECSObject):
         :type instance_id: str
         :param instance_id: The Id of instance.
         """
-        return self.connection.detach_disk(self.id, instance_id)
+        if instance_id and instance_id == self.instance_id:
+            return self.connection.detach_disk(disk_id=self.id, instance_id=instance_id)
+        return False
 
     def delete(self):
         """
@@ -115,7 +119,7 @@ class Disk(TaggedECSObject):
         :type instance_id: str
         :param instance_id: The Id of instance.
         """
-        return self.connection.delete_disk(self.id)
+        return self.connection.delete_disk(disk_id=self.id)
 
     def modify(self, disk_name=None, description=None, delete_with_instance=None):
         """
@@ -124,4 +128,6 @@ class Disk(TaggedECSObject):
         :type instance_id: str
         :param instance_id: The Id of instance.
         """
-        return self.connection.modify_disk(self.id, disk_name=disk_name, description=description, delete_with_instance=delete_with_instance)
+        if disk_name != self.disk_name or description != self.description or delete_with_instance != self.delete_with_instance:
+            return self.connection.modify_disk_attribute(disk_id=self.id, disk_name=disk_name, description=description, delete_with_instance=delete_with_instance)
+        return False

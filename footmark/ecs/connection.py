@@ -899,10 +899,7 @@ class ECSConnection(ACSQueryConnection):
         :rtype: dict
         :return: Returns a dictionary of disk information
         """
-        rs = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet)
-
-        # Zone Id
-        return self.describe_disk_attribute(disk_id=rs.disk_id)
+        return self.describe_disk_attribute(disk_id=self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet).disk_id)
 
     def describe_disk_attribute(self, disk_id):
         disks = self.describe_disks(disk_ids=[disk_id])
@@ -957,7 +954,7 @@ class ECSConnection(ACSQueryConnection):
 
         while True:
             try:
-                self.get_status_new(self.build_request_params(**kwargs))
+                self.get_status_new(self.build_request_params(kwargs))
                 volume = self.describe_disk_attribute(disk_id=kwargs["disk_id"])
                 if volume is None or not volume.id:
                     return True

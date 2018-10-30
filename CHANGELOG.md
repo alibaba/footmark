@@ -1,7 +1,12 @@
 ## 1.6.0 (Unreleased)
+
 IMPROVEMENTS:
 
 - Add format_request_kwargs method to make footmark more automatic ([#8](https://github.com/alibaba/footmark/pull/8))
+
+BUG FIXES:
+
+- Fix modify and delete disk bug ([#9](https://github.com/alibaba/footmark/pull/9))
 
 ## 1.5.1 (October 19, 2018)
 
