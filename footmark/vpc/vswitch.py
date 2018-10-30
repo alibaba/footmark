@@ -38,21 +38,24 @@ class VSwitch(TaggedVPCObject):
         super(TaggedVPCObject, self).__setattr__(name, value)
 
     def modify(self, name=None, description=None):
-        params = {}
-        if self.vswitch_name != name:
-            params['vswitch_name'] = name
-        if self.description != description:
-            params['Descripton'] = description
-        if params:
+        params = {'vswitch_id':self.id, 'vswitch_name': self.vswitch_name, 'descripiton': self.description}
+        changed = False
+        if name and self.vswitch_name != name:
+            changed = True
+            params['vswitch_name']=name
+        if description and self.description != description:
+            changed = True
+            params['description'] = description
+        if changed:
             params['vswitch_id'] = self.vswitch_id
-            return self.connection.modify_vswitch(params)
+            return self.connection.modify_vswitch_attribute(**params)
         return False
 
     def get(self):
-        return self.connection.get_vswitch_attribute(self.vswitch_id)
+        return self.connection.describe_vswitch_attribute(vswitch_id=self.vswitch_id)
 
     def delete(self):
-        return self.connection.delete_vswitch(self.vswitch_id)
+        return self.connection.delete_vswitch(vswitch_id=self.vswitch_id)
 
     def read(self):
         vswitch = {}
@@ -67,9 +70,6 @@ class VSwitch(TaggedVPCObject):
             if name == 'status':
                 name = 'state'
                 value = str(value).lower()
-
-            if name == 'zone_id':
-                name = 'availability_zone'
 
             vswitch[name] = value
         return vswitch

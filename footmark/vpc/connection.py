@@ -12,10 +12,11 @@ from footmark.vpc.vswitch import VSwitch
 from footmark.vpc.router import RouteEntry, RouteTable
 from footmark.vpc.config import *
 from aliyunsdkcore.acs_exception.exceptions import ServerException
+# from aliyunsdkvpc.request.v20160428.DescribeVpcAttributeRequest import
 
 
 class VPCConnection(ACSQueryConnection):
-    SDKVersion = '2014-05-26'
+    SDKVersion = '2016-04-28'
     DefaultRegionId = 'cn-hangzhou'
     DefaultRegionName = u'杭州'.encode("UTF-8")
     ResponseError = VPCResponseError
@@ -32,7 +33,7 @@ class VPCConnection(ACSQueryConnection):
         if sdk_version:
             self.SDKVersion = sdk_version
 
-        self.VPCSDK = 'aliyunsdkecs.request.v' + self.SDKVersion.replace('-', '')
+        self.VPCSDK = 'aliyunsdkvpc.request.v' + self.SDKVersion.replace('-', '')
 
         super(VPCConnection, self).__init__(acs_access_key_id=acs_access_key_id,
                                             acs_secret_access_key=acs_secret_access_key,
@@ -69,52 +70,44 @@ class VPCConnection(ACSQueryConnection):
 
             self.build_filters_params(params, value)
 
-    def create_vpc(self, params):
-        if not params:
-            raise Exception('There is no any parameter used to create a new vpc.')
-        params['Action'] = 'CreateVpc'
+    def format_vpc_request_kwargs(self, **kwargs):
+        for key, value in kwargs.items():
 
-        user_cidrs = params.get('user_cidrs')
-        if user_cidrs:
-            if not isinstance(user_cidrs, list):
-                raise Exception("Error: 'user_cidrs' must be a list. Current value is: {0}.".format(user_cidrs))
-            params['user_cidr'] = str(",").join(user_cidrs)
+            # Format Vswitch to VSwitch
+            if key == 'Action':
+                if str(value).find("Vswitch"):
+                    kwargs[key] = str(value).replace("Vswitch", "VSwitch")
 
-        response = self.get_object_new(self.build_request_params(params), ResultSet)
-        vpc_id = str(response.vpc_id)
+            # Convert vpc user cidrs and vpc id
+            if key in ['user_cidr', 'vpc_id']:
+                if value:
+                    if not isinstance(value, list):
+                        value = [value]
+                    kwargs[key] = str(",").join(value)
+
+        return kwargs
+
+    def create_vpc(self, **kwargs):
+        vpc_id = self.get_object_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), ResultSet).vpc_id
         self.wait_for_vpc_status(vpc_id, 'Available', 4, 120)
-        return self.get_vpc_attribute(vpc_id)
+        return self.describe_vpc_attribute(vpc_id=vpc_id)
 
-    def get_vpc_attribute(self, vpc_id):
-        vpcs = self.get_all_vpcs({'vpc_ids': [vpc_id]})
-        if vpcs:
-            return vpcs[0]
+    def describe_vpc_attribute(self, **kwargs):
+        return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), Vpc)
 
-        return None
+    def describe_vpcs(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Vpcs', Vpc])
 
-    def get_all_vpcs(self, filters=None):
-        if not filters:
-            filters = {}
-        vpc_ids = filters.get('vpc_ids')
-        if vpc_ids:
-            filters['vpc_id'] = str(",").join(vpc_ids)
-        filters['Action'] = 'DescribeVpcs'
-
-        return self.get_list_new(self.build_request_params(filters), ['Vpcs', Vpc])
-
-    def modify_vpc(self, params):
-        if not params:
-            return False
-        params['Action'] = 'ModifyVpcAttribute'
-        if self.get_status_new(self.build_request_params(params)):
-            return self.wait_for_vpc_status(params.get('vpc_id'), 'Available', 4, 60)
+    def modify_vpc_attribute(self, **kwargs):
+        if self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs)))):
+            return self.wait_for_vpc_status(kwargs['vpc_id'], 'Available', 4, 60)
         return False
 
-    def delete_vpc(self, vpc_id):
+    def delete_vpc(self, **kwargs):
         retry = 5
         while retry:
             try:
-                return self.get_status_new(self.build_request_params({'vpc_id': vpc_id, 'Action': 'DeleteVpc'}))
+                return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
             except ServerException as e:
                 if str(e.error_code) == "Forbbiden":
                     time.sleep(5)
@@ -123,72 +116,28 @@ class VPCConnection(ACSQueryConnection):
                 raise e
         return False
 
-
-    def create_vswitch(self, params):
-        if not params:
-            raise Exception('There is no any parameter used to create a new vswitch.')
-        zone_id = params.get('zone_id', params.get('availability_zone'))
-        if not zone_id:
-            raise Exception("'availability_zone' is required for creating a new vswitch.")
-        params['zone_id'] = zone_id
-        params['Action'] = 'CreateVSwitch'
-        response = self.get_object_new(self.build_request_params(params), ResultSet)
-        vswitch_id = str(response.vswitch_id)
+    def create_vswitch(self, **kwargs):
+        vswitch_id = self.get_object_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), ResultSet).vswitch_id
         self.wait_for_vswitch_status(vswitch_id, 'Available', 4, 120)
-        return self.get_vswitch_attribute(vswitch_id)
+        return self.desvswitch_attribute(vswitch_id=vswitch_id)
 
-    def get_all_vswitches(self, filters=None):
-        if not filters:
-            filters = {}
-        filters['Action'] = 'DescribeVSwitches'
-        result = []
-        vswitches = self.get_list_new(self.build_request_params(filters), ['VSwitches', VSwitch])
-        vsw_ids = filters.get('vswitch_ids')
-        if vswitches and vsw_ids:
-            for vsw in vswitches:
-                if vsw.vswitch_id in vsw_ids:
-                    result.append(vsw)
-            return result
-        return vswitches
+    def describe_vswitches(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), ['VSwitches', VSwitch])
 
-    def get_vswitch_attribute(self, vswitch_id):
-        response = self.get_all_vswitches({'vswitch_id': vswitch_id})
-        if response:
-            return response[0]
-        return None
+    def describe_vswitch_attributes(self, **kwargs):
+        return self.get_object_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), VSwitch)
 
-    def modify_vswitch(self, params):
-        if not params:
-            return False
-        params['Action'] = 'ModifyVSwitchAttribute'
+    # In order to unify, add an extra method. It is equal to describe_vswitch_attributes
+    def describe_vswitch_attribute(self, **kwargs):
+        kwargs = self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))
+        kwargs['Action'] = kwargs['Action'] + 's'
+        return self.get_object_new(self.build_request_params(kwargs), VSwitch)
 
-        if self.get_status_new(self.build_request_params(params)):
-            return self.wait_for_vswitch_status(params.get('vswitch_id'), 'Available', 4, 16)
-        return False
+    def modify_vswitch_attribute(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
 
-    def delete_vswitch(self, vswitch_id):
-        return self.get_status_new(self.build_request_params({'vswitch_id': vswitch_id, 'Action': 'DeleteVSwitch'}))
-
-    def delete_vswitch_with_vpc(self, vpc_id):
-        """
-        Delete VSwitches in the specified VPC
-        :type vpc_id : str
-        :param vpc_id: The Id of vpc to which vswitch belongs
-        :rtype list
-        :return: return list ID of deleted VSwitch
-        """
-
-        vswitch_ids = []
-        if not vpc_id:
-                raise Exception(msg="It must be specify vpc_id.")
-
-        vswitches = self.get_all_vswitches(vpc_id=vpc_id)
-        for vsw in vswitches:
-            vsw_id = str(vsw.id)
-            if self.delete_vswitch(vsw_id):
-                vswitch_ids.append(vsw_id)
-
-        return vswitch_ids
+    def delete_vswitch(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
 
     def create_route_entry(self, route_table_id, destination_cidrblock, nexthop_type=None, nexthop_id=None, nexthop_list=None):
         """
@@ -593,7 +542,7 @@ class VPCConnection(ACSQueryConnection):
 
         try:
             while True:
-                vpc = self.get_vpc_attribute(vpc_id)
+                vpc = self.describe_vpc_attribute(vpc_id=vpc_id)
                 if vpc and str(vpc.status) in [status, str(status).lower()]:
                     return True
 
@@ -609,7 +558,7 @@ class VPCConnection(ACSQueryConnection):
     def wait_for_vswitch_status(self, vswitch_id, status, delay=DefaultWaitForInterval, timeout=DefaultTimeOut):
         try:
             while True:
-                vsw = self.get_vswitch_attribute(vswitch_id)
+                vsw = self.describe_vswitch_attribute(vswitch_id=vswitch_id)
                 if vsw and str(vsw.status) in [status, str(status).lower()]:
                     return True
 
