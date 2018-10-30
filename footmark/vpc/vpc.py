@@ -36,24 +36,24 @@ class Vpc(TaggedVPCObject):
             value = v
         super(TaggedVPCObject, self).__setattr__(name, value)
 
-    def modify(self, vpc_name=None, description=None, user_cidrs=None):
+    def modify(self, vpc_name=None, description=None):
         """
         Update vpc's attribute
         """
-        params = {}
-        if user_cidrs and sorted(user_cidrs) != sorted(self.user_cidrs['user_cidr']):
-            params['user_cidr'] = str(',').join(user_cidrs)
-        if self.name != vpc_name:
+        changed = False
+        params = {'vpc_id': self.id, 'vpc_name': self.vpc_name, 'description': self.description}
+        if vpc_name and self.name != vpc_name:
             params['vpc_name'] = vpc_name
-        if self.description != description:
+            changed = True
+        if description and self.description != description:
+            changed = True
             params['description'] = description
-        if params:
-            params['vpc_id'] = self.vpc_id
-            return self.connection.modify_vpc(params)
+        if changed:
+            return self.connection.modify_vpc_attribute(**params)
         return False
 
     def get(self):
-        return self.connection.get_vpc_attribute(self.id)
+        return self.connection.describe_vpc_attribute(vpc_id=self.id)
 
     def read(self):
         vpc = {}
@@ -81,4 +81,4 @@ class Vpc(TaggedVPCObject):
         """
         Terminate the vpc
         """
-        return self.connection.delete_vpc(self.id)
+        return self.connection.delete_vpc(vpc_id=self.id)
