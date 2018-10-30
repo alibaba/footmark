@@ -2,7 +2,8 @@
 
 IMPROVEMENTS:
 
-- Add format_vpc_request_kwargs method to make footmark-vpc more automatic ([#9](https://github.com/alibaba/footmark/pull/9))
+- Modify ecs and vpc method 'modify' ([#11](https://github.com/alibaba/footmark/pull/11))
+- Add format_vpc_request_kwargs method to make footmark-vpc more automatic ([#10](https://github.com/alibaba/footmark/pull/10))
 - Add format_request_kwargs method to make footmark more automatic ([#8](https://github.com/alibaba/footmark/pull/8))
 
 BUG FIXES:

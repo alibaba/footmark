@@ -119,7 +119,7 @@ class VPCConnection(ACSQueryConnection):
     def create_vswitch(self, **kwargs):
         vswitch_id = self.get_object_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), ResultSet).vswitch_id
         self.wait_for_vswitch_status(vswitch_id, 'Available', 4, 120)
-        return self.desvswitch_attribute(vswitch_id=vswitch_id)
+        return self.describe_vswitch_attribute(vswitch_id=vswitch_id)
 
     def describe_vswitches(self, **kwargs):
         return self.get_list_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), ['VSwitches', VSwitch])

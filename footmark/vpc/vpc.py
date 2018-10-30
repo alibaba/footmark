@@ -40,15 +40,13 @@ class Vpc(TaggedVPCObject):
         """
         Update vpc's attribute
         """
-        changed = False
-        params = {'vpc_id': self.id, 'vpc_name': self.vpc_name, 'description': self.description}
+        params = {}
         if vpc_name and self.name != vpc_name:
             params['vpc_name'] = vpc_name
-            changed = True
         if description and self.description != description:
-            changed = True
             params['description'] = description
-        if changed:
+        if params:
+            params['vpc_id'] = self.vpc_id
             return self.connection.modify_vpc_attribute(**params)
         return False
 
