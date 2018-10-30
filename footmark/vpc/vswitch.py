@@ -38,15 +38,12 @@ class VSwitch(TaggedVPCObject):
         super(TaggedVPCObject, self).__setattr__(name, value)
 
     def modify(self, name=None, description=None):
-        params = {'vswitch_id':self.id, 'vswitch_name': self.vswitch_name, 'descripiton': self.description}
-        changed = False
+        params = {}
         if name and self.vswitch_name != name:
-            changed = True
             params['vswitch_name']=name
         if description and self.description != description:
-            changed = True
             params['description'] = description
-        if changed:
+        if params:
             params['vswitch_id'] = self.vswitch_id
             return self.connection.modify_vswitch_attribute(**params)
         return False

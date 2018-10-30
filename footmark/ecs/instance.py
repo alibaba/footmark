@@ -156,12 +156,20 @@ class Instance(TaggedECSObject):
         :type password: str
         :param password: Instance Password
         """
-        if self.name != name or self.description != description or self.host_name != host_name or self.user_data != user_data or password:
-            if not password:
-                return self.connection.modify_instance_attribute(instance_id=self.id, instance_name=name, description=description,
-                                                                 host_name=host_name, user_data=user_data)
-            return self.connection.modify_instance_attribute(instance_id=self.id, instance_name=name, description=description,
-                                                             password=password, host_name=host_name, user_data=user_data)
+        params = {}
+        if name and self.name != name:
+            params['instance_name'] = name
+        if description and self.description != description:
+            params['description'] = description
+        if host_name and self.host_name != host_name:
+            params['host_name'] = host_name
+        if user_data and self.user_data != user_data:
+            params['user_data'] = user_data
+        if password:
+            params['password'] = password
+        if params:
+            params['instance_id'] = self.instance_id
+            return self.connection.modify_instance_attribute(**params)
         return False
 
     def terminate(self, force=False):

@@ -128,6 +128,14 @@ class Disk(TaggedECSObject):
         :type instance_id: str
         :param instance_id: The Id of instance.
         """
-        if disk_name != self.disk_name or description != self.description or delete_with_instance != self.delete_with_instance:
-            return self.connection.modify_disk_attribute(disk_id=self.id, disk_name=disk_name, description=description, delete_with_instance=delete_with_instance)
+        params = {}
+        if disk_name and disk_name != self.disk_name:
+            params['disk_name'] = disk_name
+        if description != self.description:
+            params['description'] = description
+        if delete_with_instance is not None and delete_with_instance != self.delete_with_instance:
+            params['delete_with_instance'] = delete_with_instance
+        if params:
+            params['disk_id'] = self.disk_id
+            return self.connection.modify_disk_attribute(**params)
         return False
