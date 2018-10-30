@@ -77,6 +77,13 @@ setup(
     # your project is installed. For an analysis of "install_requires" vs pip's
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
-    install_requires=['aliyun-python-sdk-ecs>=2.1.0', 'aliyun-python-sdk-slb>=2.0.21', 'aliyun-python-sdk-core>=2.3.2',
-                      'aliyun-python-sdk-rds>=2.1.0', 'aliyun-python-sdk-ess>=2.1.3', 'oss2>=2.3.3', 'importlib']
+    install_requires=['aliyun-python-sdk-core>=2.9.5,<2.9.6',
+                      'aliyun-python-sdk-ecs>=4.11.0,<4.11.1',
+                      'aliyun-python-sdk-slb>=2.0.21',
+                      'aliyun-python-sdk-rds>=3.0.2,<3.0.3',
+                      'aliyun-python-sdk-rds>=2.1.0',
+                      'aliyun-python-sdk-ess>=2.1.3',
+                      'oss2>=2.3.3',
+                      'importlib'
+                      ]
 )
