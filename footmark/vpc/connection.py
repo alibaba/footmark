@@ -109,7 +109,7 @@ class VPCConnection(ACSQueryConnection):
             try:
                 return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
             except ServerException as e:
-                if str(e.error_code) == "Forbbiden":
+                if str(e.error_code) == "Forbbiden" or str(e.error_code).find("Dependency"):
                     time.sleep(5)
                     retry -= 1
                     continue

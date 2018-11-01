@@ -35,12 +35,79 @@ class SecurityGroup(TaggedECSObject):
                 value = value.get('permission')
         if name == "rules":
             setattr(self, 'permissions', value)
+        if name == 'ip_protocol':
+            value = str(value).lower()
         if name == 'tags' and value:
             v = {}
             for tag in value['tag']:
                 v[tag.get('TagKey')] = tag.get('TagValue', None)
             value = v
         super(TaggedECSObject, self).__setattr__(name, value)
+
+    def modify(self, name=None, description=None):
+        params = {}
+        if name and self.security_group_name != name:
+            params['security_group_name'] = name
+        if description and self.description != description:
+            params['description'] = description
+        if params:
+            params['security_group_id'] = self.id
+            return self.connection.modify_security_group_attribute(**params)
+        return False
+
+    def authorize(self, rule, direction):
+
+        if not isinstance(rule, dict):
+            module.fail_json(msg='Invalid rule parameter type [{0}].'.format(type(rule)))
+
+        find = False
+        for per in self.permissions:
+            if per.get('direction', "") != direction:
+                continue
+            for key, value in rule.items():
+                if value != per.get(key, ""):
+                    find = False
+                    break
+                find = True
+            if find:
+                break
+        # If the rule is in the group, return directly.
+        if find:
+            return False
+        params = {}
+        for k, v in rule.items():
+            params[k] = v
+        params["security_group_id"] = self.id
+        if direction == 'ingress':
+            return self.connection.authorize_security_group(**params)
+        return self.connection.authorize_security_group_egress(**params)
+
+    def revoke(self, rule, direction):
+
+        if not isinstance(rule, dict):
+            module.fail_json(msg='Invalid rule parameter type [{0}].'.format(type(rule)))
+
+        find = False
+        for per in self.permissions:
+            if per.get('direction', "") != direction:
+                continue
+            for key, value in rule.items():
+                if value != per.get(key, ""):
+                    find = False
+                    break
+                find = True
+            if find:
+                break
+        # If the rule is not in the group, return directly.
+        if not find:
+            return False
+        params = {}
+        for k, v in rule.items():
+            params[k] = v
+        params["security_group_id"] = self.id
+        if direction == 'ingress':
+            return self.connection.revoke_security_group(**params)
+        return self.connection.revoke_security_group_egress(**params)
 
     def delete(self):
         """

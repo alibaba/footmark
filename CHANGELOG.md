@@ -1,5 +1,12 @@
 ## 1.7.0 (Unreleased)
-## 1.6.0 (October 30, 2018)
+
+IMPROVEMENTS:
+
+- Modify security group and rules method ([#11](https://github.com/alibaba/footmark/pull/11))
+
+## 1.6.3 (October 31, 2018)
+
+**Note:** Package 1.6.0-1.6.2 has instanll error and them have been deleted. 1.6.3 is a stable releasse.
 
 IMPROVEMENTS:
 
