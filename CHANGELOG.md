@@ -2,7 +2,8 @@
 
 IMPROVEMENTS:
 
-- Modify security group and rules method ([#11](https://github.com/alibaba/footmark/pull/11))
+- Add wait time to make sure instance statue is correct ([#13](https://github.com/alibaba/footmark/pull/13))
+- Modify security group and rules method ([#12](https://github.com/alibaba/footmark/pull/12))
 
 ## 1.6.3 (October 31, 2018)
 
