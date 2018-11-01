@@ -671,133 +671,20 @@ class ECSConnection(ACSQueryConnection):
 
         return None
 
-    def authorize_security_group(self, security_group_id=None, inbound_rules=None, outbound_rules=None):
-        """
-        authorize security group in ecs
+    def modify_security_group_attribute(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        :type security_group_id: string
-        :param security_group_id: The ID of the target security group
+    def authorize_security_group(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        :type inbound_rules: list
-        :param inbound_rules: Inbound rules for authorization
+    def authorize_security_group_egress(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        :type outbound_rules: list
-        :param outbound_rules: Outbound rules for authorization
+    def revoke_security_group(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        :rtype: list
-        :return: Returns the successful message if all rules successfully authorized else returns details of failed
-                    authorization rules.
-
-        Note: Use validate_sg_rules(rules) method for pre-defined basic validation before using this method.
-        """
-
-        # aliases for rule
-
-        rule_types = []
-        inbound_failed_rules = []
-        outbound_failed_rules = []
-
-        api_action = {
-            "inbound": "AuthorizeSecurityGroup",
-            "outbound": "AuthorizeSecurityGroupEgress"
-        }
-
-        rule_choice = {
-            "inbound": inbound_rules,
-            "outbound": outbound_rules,
-        }
-
-        api_group_id_param_name = {
-            "inbound": "SourceGroupId",
-            "outbound": "DestGroupId",
-        }
-
-        api_group_owner_param_name = {
-            "inbound": "SourceGroupOwnerId",
-            "outbound": "DestGroupOwnerId",
-        }
-
-        api_cidr_ip_param_name = {
-            "inbound": "SourceCidrIp",
-            "outbound": "DestCidrIp",
-        }
-
-        failure_rule_choice = {
-            "inbound": inbound_failed_rules,
-            "outbound": outbound_failed_rules
-        }
-
-        if inbound_rules:
-            rule_types.append('inbound')
-
-        if outbound_rules:
-            rule_types.append('outbound')
-
-        result_details = []
-
-        for rule_type in rule_types:
-
-            rules = rule_choice.get(rule_type)
-
-            total_rules = len(rules)
-
-            success_rule_count = 0
-
-            if total_rules != 0:
-
-                for rule in rules:
-
-                    params = {}
-
-                    self.build_list_params(params, security_group_id, 'SecurityGroupId')
-
-                    ip_protocol = rule['ip_protocol']
-
-                    self.build_list_params(params, ip_protocol, 'IpProtocol')
-
-                    port_range = str(rule['port_range'])
-
-                    self.build_list_params(params, port_range, 'PortRange')
-
-                    if 'group_id' in rule:
-                        self.build_list_params(params, rule['group_id'], api_group_id_param_name.get(rule_type))
-
-                    if 'cidr_ip' in rule:
-                        self.build_list_params(params, rule['cidr_ip'], api_cidr_ip_param_name.get(rule_type))
-
-                    if 'group_owner_id' in rule:
-                        self.build_list_params(params, rule['group_owner_id'],
-                                               api_group_owner_param_name.get(rule_type))
-
-                    if 'policy' in rule:
-                        self.build_list_params(params, rule['policy'], 'Policy')
-                    if 'priority' in rule:
-                        self.build_list_params(params, rule['priority'], 'Priority')
-                    if 'nic_type' in rule:
-                        self.build_list_params(params, rule['nic_type'], 'NicType')
-
-                    try:
-                        if self.get_status(api_action.get(rule_type), params):
-                            success_rule_count += 1
-
-                    except Exception as ex:
-                        error_code = ex.error_code
-                        msg = ex.message
-
-                        rule['Error Code'] = error_code
-                        rule['Error Message'] = msg
-
-                        failure_rule_choice.get(rule_type).append(rule)
-
-                        result_details.append(
-                            'Error: ' + rule_type + ' rule authorization failed for protocol ' + ip_protocol +
-                            ' with port range ' + port_range)
-
-                if success_rule_count == total_rules:
-                    result_details.append(
-                        rule_type + ' rule authorization successful for group id ' + security_group_id)
-
-        return inbound_failed_rules, outbound_failed_rules, result_details
+    def revoke_security_group_egress(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
     def describe_security_group_attribute(self, **kwargs):
         """
@@ -817,7 +704,12 @@ class ECSConnection(ACSQueryConnection):
         :return: Returns a dictionary of security group information
 
         """
-        return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), SecurityGroup)
+        try:
+            return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), SecurityGroup)
+        except ServerException as e:
+            if str(e.error_code) == "InvalidSecurityGroupId.NotFound":
+                return None
+            raise e
 
     def describe_security_groups(self, **kwargs):
         groups = []
