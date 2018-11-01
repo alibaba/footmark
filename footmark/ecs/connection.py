@@ -229,6 +229,9 @@ class ECSConnection(ACSQueryConnection):
             for inst in self.describe_instances(instance_ids=transition, page_size=100):
                 if str(inst.status).lower() == 'stopped':
                     transition.remove(inst.id)
+        # There need sleep 10s to wait instance to finish initiated.
+        if instance_ids:
+            time.sleep(10)
 
         return self.describe_instances(instance_ids=instance_ids, page_size=100)
 
@@ -318,7 +321,7 @@ class ECSConnection(ACSQueryConnection):
                             continue
                     raise e
             while instance_ids:
-                for inst in self.describe_instances(instance_ids=instance_ids):
+                for inst in self.describe_instances(instance_ids=instance_ids, page_size=100):
                     if str(inst.status).lower() == "running":
                         instance_ids.remove(inst.id)
             return True
@@ -353,7 +356,7 @@ class ECSConnection(ACSQueryConnection):
                             continue
                     raise e
             while instance_ids:
-                for inst in self.describe_instances(instance_ids=instance_ids):
+                for inst in self.describe_instances(instance_ids=instance_ids, page_size=100):
                     if str(inst.status).lower() == "stopped":
                         instance_ids.remove(inst.id)
             return True
@@ -386,7 +389,7 @@ class ECSConnection(ACSQueryConnection):
                             self.start_instances(instance_ids=[instance_id])
                     raise e
             while instance_ids:
-                for inst in self.describe_instances(instance_ids=instance_ids):
+                for inst in self.describe_instances(instance_ids=instance_ids, page_size=100):
                     status = str(inst.status).lower()
                     if status == "running":
                         instance_ids.remove(inst.id)
