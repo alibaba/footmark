@@ -22,7 +22,7 @@ from footmark.ecs.networkinterface import NetworkInterfaceSet
 from footmark.exception import ECSResponseError
 from footmark.resultset import ResultSet
 from aliyunsdkcore.acs_exception.exceptions import ServerException
-# from aliyunsdkecs.request.v20140526.CreateInstanceRequest import Request import
+# from aliyunsdkecs.request.v20140526.DescribeInstancesRequest import Request import
 # from aliyunsdkcore.auth.composer.rpc_signature_composer import ServerException
 
 
@@ -1244,59 +1244,35 @@ class ECSConnection(ACSQueryConnection):
         all_regions = self.get_list('DescribeRegions', None, ['Regions', RegionInfo])
         return all_regions
 
-    def create_network_interface(self, params):
-        params['Action'] = 'CreateNetworkInterface'
-        result = self.get_object_new(self.build_request_params(params), ResultSet)
-        if not self.wait_for_network_interface(result.network_interface_id, "Available"):
+    def create_network_interface(self, **kwargs):
+        res = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet)
+        if not self.wait_for_network_interface(res.network_interface_id, "Available"):
             raise Exception("Waitting Network Interface {0} Failed.".format("Available"))
-        return self.get_network_interface(result.network_interface_id)
+        return self.describe_network_interfaces(network_interface_ids=[res.network_interface_id])[0]
 
-    def get_all_network_interfaces(self, filters=None):
-        if not filters:
-            filters = {}
-        filters['Action'] = 'DescribeNetworkInterfaces'
-        return self.get_list_new(self.build_request_params(filters), ['NetworkInterfaceSets', NetworkInterfaceSet])
+    def describe_network_interfaces(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['NetworkInterfaceSets', NetworkInterfaceSet])
 
-    def get_network_interface(self, network_interface_id):
-        result = self.get_all_network_interfaces({"network_interface_ids": [network_interface_id]})
-        if len(result) == 1:
-            return result[0]
-        return None
-
-    def attach_network_interface(self, network_interface_id, instance_id):
-        params = {'NetworkInterfaceId': network_interface_id,
-                  'InstanceId': instance_id,
-                  'Action': 'AttachNetworkInterface'
-                  }
-
-        changed = self.get_status_new(self.build_request_params(params))
-        if not self.wait_for_network_interface(network_interface_id, "InUse"):
+    def attach_network_interface(self, **kwargs):
+        changed = self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        if not self.wait_for_network_interface(kwargs["network_interface_id"], "InUse"):
             raise Exception("Waitting Network Interface {0} Failed.".format("InUse"))
         return changed
 
-    def detach_network_interface(self, network_interface_id, instance_id):
-        params = {'NetworkInterfaceId': network_interface_id,
-                  'InstanceId': instance_id,
-                  'Action': 'DetachNetworkInterface'
-                  }
-
-        changed = self.get_status_new(self.build_request_params(params))
-        if not self.wait_for_network_interface(network_interface_id, "Available"):
+    def detach_network_interface(self, **kwargs):
+        changed = self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        if not self.wait_for_network_interface(kwargs["network_interface_id"], "Available"):
             raise Exception("Waitting Network Interface {0} Failed.".format("Available"))
         return changed
 
-    def modify_network_interface(self, params):
-        params['Action'] = 'ModifyNetworkInterfaceAttribute'
-        if self.get_status_new(self.build_request_params(params)):
-            time.sleep(8)
+    def modify_network_interface_attribute(self, **kwargs):
+        if self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs))):
+            time.sleep(10)
             return True
         return False
 
-    def delete_network_interface(self, network_interface_id):
-        params = {'network_interface_id': network_interface_id,
-                  'Action': 'DeleteNetworkInterface'
-                  }
-        return self.get_status_new(self.build_request_params(params))
+    def delete_network_interface(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
     def wait_for_network_interface(self, id, status, delay=DefaultWaitForInterval, timeout=DefaultTimeOut):
         """
@@ -1304,8 +1280,8 @@ class ECSConnection(ACSQueryConnection):
         """
         tm = timeout
         while True:
-            result = self.get_network_interface(id)
-            if result and str(result.status).lower() in [status, str(status).lower()]:
+            result = self.describe_network_interfaces(network_interface_ids=[id])
+            if result and str(result[0].status).lower() in [status, str(status).lower()]:
                 return True
 
             tm -= delay

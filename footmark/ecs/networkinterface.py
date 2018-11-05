@@ -20,7 +20,7 @@ class NetworkInterfaceSet(TaggedECSObject):
         if name == 'id':
             return self.network_interface_id
         if name == 'name':
-            return self.network_interface_name
+            return getattr(self, "network_interface_name", "")
         if name == 'state':
             return self.status
         raise AttributeError("Object {0} does not have attribute {1}".format(self.__repr__(), name))
@@ -44,7 +44,7 @@ class NetworkInterfaceSet(TaggedECSObject):
         Update the network interface's state information by making a call to fetch
         the current interface attributes from the service.
         """
-        rs = self.connection.get_network_interface(self.id)
+        rs = self.connection.describe_network_interfaces(network_interface_ids=[self.id])
         if rs:
             self._update(rs)
         elif validate:
@@ -55,14 +55,17 @@ class NetworkInterfaceSet(TaggedECSObject):
         """
         Attach the network interface with an instance.
         """
-        return self.connection.get_network_interface(self.id)
+        res = self.connection.describe_network_interfaces(network_interface_ids=[self.id])
+        if res:
+            return res[0]
+        return None
 
     def attach(self, instance_id):
         """
         Attach the network interface with an instance.
         """
         if instance_id and not self.instance_id:
-            return self.connection.attach_network_interface(self.id, instance_id)
+            return self.connection.attach_network_interface(network_interface_id=self.id, instance_id=instance_id)
         return False
 
     def detach(self, instance_id):
@@ -70,7 +73,7 @@ class NetworkInterfaceSet(TaggedECSObject):
         Detach the network interface from an instance.
         """
         if self.instance_id and self.instance_id == instance_id:
-            return self.connection.detach_network_interface(self.id, instance_id)
+            return self.connection.detach_network_interface(network_interface_id=self.id, instance_id=instance_id)
         return False
 
     def modify(self, security_group_ids=None, name=None, description=None):
@@ -80,20 +83,20 @@ class NetworkInterfaceSet(TaggedECSObject):
         params = {}
         if security_group_ids and sorted(security_group_ids) != sorted(self.security_group_ids["security_group_id"]):
             params['security_group_ids'] = security_group_ids
-        if name != self.name:
+        if name and name != self.name:
             params['network_interface_name'] = name
-        if description != self.description:
+        if description and description != self.description:
             params['description'] = description
         if params:
             params['network_interface_id'] = self.id
-            return self.connection.modify_network_interface(params)
+            return self.connection.modify_network_interface_attribute(**params)
         return False
 
     def delete(self):
         """
         Terminate the network interface
         """
-        return self.connection.delete_network_interface(self.id)
+        return self.connection.delete_network_interface(network_interface_id=self.id)
 
     def read(self):
         eni = {}
@@ -124,9 +127,6 @@ class NetworkInterfaceSet(TaggedECSObject):
             if name == 'status':
                 name = 'state'
                 value = str(value).lower()
-
-            if name == 'zone_id':
-                name = 'availability_zone'
 
             eni[name] = value
         return eni
