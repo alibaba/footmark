@@ -1,4 +1,9 @@
 ## 1.8.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve network interface ([#15](https://github.com/alibaba/footmark/pull/15))
+
 ## 1.7.0 (2 November, 2018)
 
 IMPROVEMENTS:
