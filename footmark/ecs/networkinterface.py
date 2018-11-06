@@ -34,6 +34,12 @@ class NetworkInterfaceSet(TaggedECSObject):
             value = value.lower()
         if name == 'state':
             self.status = value
+        if name == 'tags' and value:
+            v = {}
+            for tag in value['tag']:
+                if tag.get('tag_key'):
+                    v[tag.get('tag_key')] = tag.get('tag_value', None)
+            value = v
         super(TaggedECSObject, self).__setattr__(name, value)
 
     def _update(self, updated):
@@ -97,6 +103,34 @@ class NetworkInterfaceSet(TaggedECSObject):
         Terminate the network interface
         """
         return self.connection.delete_network_interface(network_interface_id=self.id)
+
+    def add_tags(self, tags):
+        """
+        Add tags
+        """
+        if tags:
+            remain = {}
+            for key, value in tags.items():
+                if key in self.tags.keys() and value == self.tags[key]:
+                    continue
+                remain[key] = value
+            if remain:
+                return self.connection.add_tags(resource_id=self.id, resource_type="eni", tags=remain)
+        return False
+
+    def remove_tags(self, tags):
+        """
+        remove tags
+        """
+        if tags:
+            remain = {}
+            for key, value in tags.items():
+                if key not in self.tags.keys():
+                    continue
+                remain[key] = value
+            if remain:
+                return self.connection.remove_tags(resource_id=self.id, resource_type="eni", tags=tags)
+        return False
 
     def read(self):
         eni = {}
