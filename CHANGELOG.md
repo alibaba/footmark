@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Add tags for ali_eni ([#16](https://github.com/alibaba/footmark/pull/16))
 - Improve network interface ([#15](https://github.com/alibaba/footmark/pull/15))
 
 ## 1.7.0 (2 November, 2018)
