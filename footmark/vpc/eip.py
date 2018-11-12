@@ -60,6 +60,20 @@ class Eip(TaggedVPCObject):
         if int(self.bandwidth) == int(bandwidth):
             return False
         return self.connection.modify_eip(self.id, bandwidth)
-    
-    
+
+    def read(self):
+        eip = {}
+        for name, value in self.__dict__.items():
+            if name in ["connection", "region_id", "region"]:
+                continue
+
+            if name == 'allocation_id':
+                eip['id'] = value
+
+            if name == 'status':
+                name = 'state'
+                value = str(value).lower()
+            eip[name] = value
+        return eip
+
    

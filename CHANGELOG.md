@@ -5,6 +5,10 @@ IMPROVEMENTS:
 - Add tags for ali_eni ([#16](https://github.com/alibaba/footmark/pull/16))
 - Improve network interface ([#15](https://github.com/alibaba/footmark/pull/15))
 
+BUG FIXES:
+
+- Fix eip address and private ip address ([#9](https://github.com/alibaba/footmark/pull/17))
+
 ## 1.7.0 (2 November, 2018)
 
 IMPROVEMENTS:
