@@ -372,6 +372,10 @@ class VPCConnection(ACSQueryConnection):
 
         return self.get_list('DescribeEipAddresses', params, ['EipAddresses', Eip])
 
+    def describe_eip_addresses(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['EipAddresses', Eip])
+
+
     def associate_eip(self, allocation_id, instance_id):
         """
         :type allocation_id:string

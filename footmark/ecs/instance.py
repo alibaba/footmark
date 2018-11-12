@@ -60,8 +60,8 @@ class Instance(TaggedECSObject):
                     value = value['ip_address'][0]
                 else:
                     value = None
-        if name  == 'eip_address' and isinstance(value, dict) and value['ip_address']:
-            value = value['ip_address']
+        # if name  == 'eip_address' and isinstance(value, dict) and value['ip_address']:
+        #     value = value['ip_address']
         if name == 'inner_ip':
             self.inner_ip_address = value
         if name in ('public_ip', 'assign_public_ip'):
@@ -282,7 +282,7 @@ class Instance(TaggedECSObject):
             if name == "vpc_attributes":
                 instance["vpc_id"] = value["vpc_id"]
                 instance["vswitch_id"] = value["vswitch_id"]
-                if value["private_ip_address"]["ip_address"]:
+                if value["private_ip_address"] and value["private_ip_address"]["ip_address"]:
                     instance["private_ip_address"] = value["private_ip_address"]["ip_address"][0]
                 continue
 
@@ -290,18 +290,26 @@ class Instance(TaggedECSObject):
                 value = value["network_interface"]
 
             # if name == "public_ip_address":
-            #     print "******* {0}".format(value)
+            #     # if instance.has_key("public_ip_address"):
+            #     #     continue
             #     if value and value["ip_address"]:
             #         value = value["ip_address"][0]
+            #     else:
+            #         value = ""
 
             if name == "inner_ip_address":
-                if value and value["ip_address"]:
-                    value = value["ip_address"][0]
+                if instance.has_key("private_ip_address"):
+                    continue
+                name = "private_ip_address"
+                # if value and value["ip_address"]:
+                #     value = value["ip_address"][0]
+                # else:
+                #     value = ""
 
             if name == "eip_address":
                 name = "eip"
-                if value["ip_address"]:
-                    value["ip_address"] = value["ip_address"][0]
+                # if value["ip_address"]:
+                #     instance["public_ip_address"] = value["ip_address"]
 
             if name == "gpuamount":
                 instance["gpu"]["amount"] = value
@@ -314,7 +322,7 @@ class Instance(TaggedECSObject):
             if name == "zone_id":
                 name = "availability_zone"
 
-            if name == "statue":
+            if name == "status":
                 name = "state"
 
             instance[name] = value
