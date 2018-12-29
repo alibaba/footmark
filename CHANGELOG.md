@@ -1,4 +1,9 @@
 ## 1.9.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Merge inner_ip and private_ip, and merge eip and public_ip ([#17](https://github.com/alibaba/footmark/pull/17))
+
 ## 1.8.0 (12 November, 2018)
 
 IMPROVEMENTS:

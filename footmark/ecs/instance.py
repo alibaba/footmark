@@ -23,18 +23,20 @@ class Instance(TaggedECSObject):
             return self.instance_name
         if name == 'state':
             return self.status
-        if name in ('inner_ip', 'inner_ip_address'):
-            return self.inner_ip_address['ip_address'][0]
-        if name in ('public_ip', 'assign_public_ip', 'public_ip_address'):
-                return self.public_ip_address['ip_address'][0]
-        if name in ('private_ip', 'private_ip_address', 'vpc_private_ip', 'vpc_private_ip_address'):
-            return self.vpc_attributes['private_ip_address']['ip_address'][0]
-        if name in ('vpc_vswitch_id', 'vswitch_id', 'vpc_subnet_id', 'subnet_id'):
+        if name == 'public_ip_address':
+            if not self.public_ip_address:
+                eip = getattr(self, 'eip_address', None)
+                if eip and eip["ip_address"]:
+                    return eip["ip_address"]
+        # instance private ip contains private_ip_address and inner_ip_address(Classic)
+        if name == 'private_ip_address':
+            if self.vpc_attributes['private_ip_address']['ip_address']:
+                return self.vpc_attributes['private_ip_address']['ip_address'][0]
+            return getattr(self, 'inner_ip_address', '')
+        if name in ('vswitch_id', 'subnet_id'):
             return self.vpc_attributes['vswitch_id']
         if name == 'vpc_id':
             return self.vpc_attributes['vpc_id']
-        if name in ('eip', 'elastic_ip_address'):
-            return self.eip_address
         if name in ('group_id', 'security_group_id'):
             return self.security_group_id
         if name in ('group_name', 'security_group_name') and self.security_groups:
@@ -46,44 +48,19 @@ class Instance(TaggedECSObject):
         raise AttributeError("Object {0} does not have attribute {1}".format(self.__repr__(), name))
 
     def __setattr__(self, name, value):
-        if name == 'id':
-            self.instance_id = value
-        if name == 'name':
-            self.instance_name = value
         if name == 'status':
             value = value.lower()
-        if name == 'state':
-            self.status = value
-        if name in ('public_ip_address', 'inner_ip_address', 'private_ip_address'):
+        # instance public ip contains public_ip_address and eip_address
+        if name in ('public_ip_address', 'inner_ip_address'):
             if isinstance(value, dict):
                 if value['ip_address']:
                     value = value['ip_address'][0]
                 else:
-                    value = None
-        # if name  == 'eip_address' and isinstance(value, dict) and value['ip_address']:
-        #     value = value['ip_address']
-        if name == 'inner_ip':
-            self.inner_ip_address = value
-        if name in ('public_ip', 'assign_public_ip'):
-            self.public_ip_address = value
-        if name in ('private_ip', 'vpc_private_ip', 'vpc_private_ip_address'):
-            self.vpc_attributes['private_ip_address'] = value
-            self.private_ip_address = value
-        if name in ('vpc_vswitch_id', 'vswitch_id', 'vpc_subnet_id', 'subnet_id'):
-            self.vpc_attributes['vswitch_id'] = value
-        if name == 'vpc_id':
-            self.vpc_attributes['vpc_id'] = value
-        if name in ('eip', 'elastic_ip_address'):
-            self.eip_address = value
-        if name in ('group_id', 'security_group_id'):
-            if isinstance(value, list) and value:
-                value = value[0]
-        if name in ('group_name', 'security_group_name') and self.security_groups:
-            self.security_groups[0].security_group_name = value
-        if name == 'groups':
-            self.security_groups = value
-        if name in ('key_name', 'keypair', 'key_pair'):
-            self.key_pair_name = value
+                    value = ""
+            if name == 'public_ip_address' and not value:
+                eip = getattr(self, 'eip_address', None)
+                if eip and eip["ip_address"]:
+                    value = eip["ip_address"]
         if name == 'tags' and value:
             v = {}
             for tag in value['tag']:
@@ -248,10 +225,10 @@ class Instance(TaggedECSObject):
         return self.connection.allocate_public_ip_address(instance_id=self.id)
 
     def read(self):
-        instance = {"gpu": {"amount": 0, "spec": ""}}
+        instance = {"gpu": {"amount": 0, "spec": ""}, "private_ip_address": self.private_ip_address}
         for name, value in self.__dict__.items():
             if name in ["connection", "region_id", "region", "security_group_ids", "dedicated_host_attribute", "device_available",
-                        "instance_type_family", "operation_locks", "recyclable", "sale_cycle", "serial_number", "stopped_mode",
+                        "operation_locks", "recyclable", "sale_cycle", "serial_number", "stopped_mode",
                         "vlan_id", "spot_price_limit", "spot_strategy", "cluster_id", "instance_network_type", "start_time"]:
                 continue
 
@@ -274,42 +251,22 @@ class Instance(TaggedECSObject):
                 groups = []
                 for sg in value:
                     groups.append({
-                        "group_id": sg.group_id,
-                        "group_name": sg.group_name
+                        "group_id": sg.security_group_id,
+                        "group_name": sg.security_group_name
                     })
                 value = groups
 
+            # instance private ip contains private_ip_address and inner_ip_address(Classic)
             if name == "vpc_attributes":
                 instance["vpc_id"] = value["vpc_id"]
                 instance["vswitch_id"] = value["vswitch_id"]
-                if value["private_ip_address"] and value["private_ip_address"]["ip_address"]:
-                    instance["private_ip_address"] = value["private_ip_address"]["ip_address"][0]
                 continue
 
             if name == "network_interfaces":
                 value = value["network_interface"]
 
-            # if name == "public_ip_address":
-            #     # if instance.has_key("public_ip_address"):
-            #     #     continue
-            #     if value and value["ip_address"]:
-            #         value = value["ip_address"][0]
-            #     else:
-            #         value = ""
-
-            if name == "inner_ip_address":
-                if instance.has_key("private_ip_address"):
-                    continue
-                name = "private_ip_address"
-                # if value and value["ip_address"]:
-                #     value = value["ip_address"][0]
-                # else:
-                #     value = ""
-
             if name == "eip_address":
                 name = "eip"
-                # if value["ip_address"]:
-                #     instance["public_ip_address"] = value["ip_address"]
 
             if name == "gpuamount":
                 instance["gpu"]["amount"] = value
@@ -321,9 +278,6 @@ class Instance(TaggedECSObject):
 
             if name == "zone_id":
                 name = "availability_zone"
-
-            if name == "status":
-                name = "state"
 
             instance[name] = value
         return instance
