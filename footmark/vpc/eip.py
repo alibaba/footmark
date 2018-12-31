@@ -19,60 +19,80 @@ class Eip(TaggedVPCObject):
         if name in ('ip', 'eip', 'eip_address'):
             return self.ip_address
 
-        return getattr(self, name, None)
+        raise AttributeError
 
     def __setattr__(self, name, value):
-        if name in ('id', 'eip_id'):
-            self.allocation_id = value
+        if name == 'status':
+            value = str.lower(value)
         if name in ('ip', 'eip', 'eip_address'):
             self.ip_address = value
-        if name == 'tags' and value:
-            v = {}
-            for tag in value['tag']:
-                v[tag.get('TagKey')] = tag.get('TagValue', None)
-            value = v
+        if name == 'descritpion':
+            name = 'description'
         super(TaggedVPCObject, self).__setattr__(name, value)
+
+    def get(self):
+        return self.connection.describe_eip_addresses(allocation_id=self.id)[0]
     
     def associate(self, instance_id):
         """
         bind eip
         """
-        if self.status != 'Available':
+        if str(self.status).lower() == 'inuse':
+            if self.instance_id == instance_id:
+                return False
             raise Exception('EIP {0} current status {1} does not support association.'.format(self.id, self.status))
-        return self.connection.associate_eip(self.id, instance_id)
+        instance_type = "EcsInstance"
+        if str(instance_id).startswith("lb-"):
+            instance_type = "SlbInstance"
+        if str(instance_id).startswith("nat-"):
+            instance_type = "Nat"
+        if str(instance_id).startswith("havip-"):
+            instance_type = "HaVip"
+        if str(instance_id).startswith("eni-"):
+            instance_type = "NetworkInterface"
 
-    def disassociate(self, instance_id):
+        return self.connection.associate_eip_address(allocation_id=self.id, instance_id=instance_id, instance_type=instance_type)
+
+    def unassociate(self, instance_id):
         """
         unbind eip
         """
-        return self.connection.disassociate_eip(self.id, instance_id)
+        if str(self.status).lower() == 'available':
+            return False
+        return self.connection.unassociate_eip_address(allocation_id=self.id, instance_id=instance_id)
     
     def release(self):
         """
         release eip
         """
-        return self.connection.release_eip(self.id)
+        return self.connection.release_eip_address(allocation_id=self.id)
     
-    def modify(self, bandwidth):
+    def modify(self, bandwidth=None, name=None, description=None):
         """
         modify eip
         """
-        if int(self.bandwidth) == int(bandwidth):
-            return False
-        return self.connection.modify_eip(self.id, bandwidth)
+        params = {}
+        if bandwidth and int(self.bandwidth) != int(bandwidth):
+            params['bandwidth'] = bandwidth
+        if name and self.name != name:
+            params['name'] = name
+        if description and self.description != description:
+            params['description'] = description
+        if params:
+            params['allocation_id'] = self.allocation_id
+            return self.connection.modify_eip_address_attribute(**params)
+        return False
 
     def read(self):
         eip = {}
         for name, value in self.__dict__.items():
-            if name in ["connection", "region_id", "region"]:
+            if name in ["connection", "region_id", "region", "available_regions", "operation_locks", "resource_group_id",
+                        "has_reservation_data", "hdmonitor_status", "isp"]:
                 continue
 
             if name == 'allocation_id':
                 eip['id'] = value
 
-            if name == 'status':
-                name = 'state'
-                value = str(value).lower()
             eip[name] = value
         return eip
 

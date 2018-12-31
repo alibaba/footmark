@@ -12,7 +12,7 @@ from footmark.vpc.vswitch import VSwitch
 from footmark.vpc.router import RouteEntry, RouteTable
 from footmark.vpc.config import *
 from aliyunsdkcore.acs_exception.exceptions import ServerException
-# from aliyunsdkvpc.request.v20160428.DescribeVpcAttributeRequest import
+# from aliyunsdkvpc.request.v20160428.ModifyEipAddressAttributeRequest import
 
 
 class VPCConnection(ACSQueryConnection):
@@ -319,7 +319,7 @@ class VPCConnection(ACSQueryConnection):
 
         return results
 
-    def allocate_eip_address(self, bandwidth=5, internet_charge_type='PayByBandwidth', client_token=None):
+    def allocate_eip_address(self, **kwargs):
         """
         method to query eip addresses in the region
         :type int
@@ -328,17 +328,12 @@ class VPCConnection(ACSQueryConnection):
         :param internet_charge_type : paybytraffic or paybybandwidth types
         :return: Return the allocationId , requestId and EIP address
         """
-        params = {}
-        self.build_list_params(params, str(bandwidth), 'Bandwidth')
-        self.build_list_params(params, internet_charge_type, 'InternetChargeType')
-        if client_token:
-            self.build_list_params(params, client_token, 'ClientToken')
                   
-        result = self.get_object('AllocateEipAddress', params, ResultSet)
-        if result:
-            return self.wait_for_eip_status(allocation_id=result.allocation_id, eip_address=result.eip_address,
-                                            status='Available', interval=3, timeout=60)
-
+        id = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet).allocation_id
+        self.wait_for_eip_status(allocation_id=id, status='Available', interval=3, timeout=60)
+        eips = self.describe_eip_addresses(allocation_id=id)
+        if eips:
+            return eips[0]
         return None
 
     def get_all_eip_addresses(self, status=None, ip_address=None, allocation_id=None, associated_instance_type=None,
@@ -375,8 +370,7 @@ class VPCConnection(ACSQueryConnection):
     def describe_eip_addresses(self, **kwargs):
         return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['EipAddresses', Eip])
 
-
-    def associate_eip(self, allocation_id, instance_id):
+    def associate_eip_address(self, **kwargs):
         """
         :type allocation_id:string
         :param allocation_id:The instance ID of the EIP
@@ -385,17 +379,10 @@ class VPCConnection(ACSQueryConnection):
         :param client_token: Used to ensure the idempotence of the request
         :return:Returns the status of operation
         """
-        params = {}
+        self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return self.wait_for_eip_status(allocation_id=kwargs['allocation_id'], status="InUse", interval=2, timeout=60)
 
-        self.build_list_params(params, allocation_id, 'AllocationId')
-        self.build_list_params(params, instance_id, 'InstanceId')
-        if str(instance_id).startswith("lb-"):
-            self.build_list_params(params, 'SlbInstance', 'InstanceType')
-       
-        self.get_status('AssociateEipAddress', params)
-        return self.wait_for_eip_status(allocation_id=allocation_id, status="InUse", interval=2, timeout=60) is None
-
-    def disassociate_eip(self, allocation_id, instance_id):
+    def unassociate_eip_address(self, **kwargs):
         """
         :type allocation_id:string
         :param allocation_id:The instance ID of the EIP
@@ -403,14 +390,10 @@ class VPCConnection(ACSQueryConnection):
         :param instance_id:The ID of an ECS instance
         :return:Request Id
         """
-        params = {}
-        self.build_list_params(params, allocation_id, 'AllocationId')
-        self.build_list_params(params, instance_id, 'InstanceId')
-        self.get_status('UnassociateEipAddress', params)
+        self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return self.wait_for_eip_status(allocation_id=kwargs['allocation_id'], status="Available", interval=2, timeout=60)
 
-        return self.wait_for_eip_status(allocation_id=allocation_id, status="Available", interval=2, timeout=60) is None
-
-    def modify_eip(self, allocation_id, bandwidth):
+    def modify_eip_address_attribute(self, **kwargs):
         """
         :type allocation_id:string
         :param allocation_id:The instance ID of the EIP
@@ -418,34 +401,16 @@ class VPCConnection(ACSQueryConnection):
         :param bandwidth:Bandwidth of the EIP instance
         :return:Request Id
         """
-        params = {}
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-        self.build_list_params(params, allocation_id, 'AllocationId')
-        if int(bandwidth) > 0:
-            self.build_list_params(params, int(bandwidth), 'Bandwidth')
-        return self.get_status('ModifyEipAddressAttribute', params)
-
-    def release_eip(self, allocation_id):
+    def release_eip_address(self, **kwargs):
         """
         To release Elastic Ip
         :type allocation_id: string
         :param allocation_id: To release the allocation ID,allocation ID uniquely identifies the EIP
         :return: Return status of operation
         """
-        params = {}
-
-        self.build_list_params(params, allocation_id, 'AllocationId')
-        try_times = 10
-        while try_times > 0:
-            self.get_status('ReleaseEipAddress', params)
-            eips = self.get_all_eip_addresses(allocation_id=allocation_id)
-            if not eips or len(eips) < 1:
-                return True
-            time.sleep(3)
-            try_times -= 1
-
-        raise Exception("Retry 10 times to release EIP failed."
-                        "Please ensure EIP status is Available before releasing it.")
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
     def get_all_vrouters(self, vrouter_id=None, pagenumber=None, pagesize=None):
         """
@@ -480,7 +445,7 @@ class VPCConnection(ACSQueryConnection):
 
         return False, results
 
-    def wait_for_eip_status(self, allocation_id, status, eip_address=None, interval=DefaultWaitForInterval, timeout=DefaultTimeOut):
+    def wait_for_eip_status(self, allocation_id, status, interval=DefaultWaitForInterval, timeout=DefaultTimeOut):
         """
         wait for bind ok
         :param eip_address:
@@ -491,11 +456,11 @@ class VPCConnection(ACSQueryConnection):
         try:
             tm = 0
             while tm < timeout:
-                eips = self.get_all_eip_addresses(allocation_id=allocation_id, ip_address=eip_address)
+                eips = self.describe_eip_addresses(allocation_id=allocation_id)
                 if not eips or len(eips) < 1:
-                    return None
-                if str.lower(status) == str.lower(eips[0].status):
-                    return eips[0]
+                    raise Exception("Not Found Error: The specified eip {0} is not found.".format(allocation_id))
+                if str(status).lower() == str(eips[0].status).lower():
+                    return True
                 tm += interval
                 if tm >= timeout:
                     raise Exception("Timeout Error: Waiting For EIP Status {0}, time-consuming {1} seconds.".format(status, timeout))
