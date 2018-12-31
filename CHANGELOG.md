@@ -4,6 +4,10 @@ IMPROVEMENTS:
 
 - Merge inner_ip and private_ip, and merge eip and public_ip ([#17](https://github.com/alibaba/footmark/pull/17))
 
+BUG FIXES:
+
+- Fix security token not working bug ([#18](https://github.com/alibaba/footmark/pull/18))
+
 ## 1.8.0 (12 November, 2018)
 
 IMPROVEMENTS:
