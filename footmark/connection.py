@@ -23,13 +23,14 @@ from pprint import pprint
 
 from aliyunsdkcore import client
 from aliyunsdkcore.acs_exception.exceptions import ServerException
+from aliyunsdkcore.auth.credentials import StsTokenCredential
 # from aliyunsdkecs.request.v20140526.DescribeNetworkInterfacesRequest import
 
 
 
 class ACSAuthConnection(object):
-    def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, provider='acs', security_token=None, user_agent=None):
+    def __init__(self, acs_access_key_id=None, acs_secret_access_key=None, security_token=None,
+                 region=None, provider='acs',  user_agent=None):
         """
         :keyword str acs_access_key_id: Your ACS Access Key ID (provided by
             Alicloud). If none is specified, the value in your
@@ -69,6 +70,11 @@ class ACSAuthConnection(object):
     acs_secret_access_key = property(acs_secret_access_key)
     secret_key = acs_secret_access_key
 
+    def security_token(self):
+        return self.provider.security_token
+
+    security_token = property(security_token)
+
     def region_id(self):
         return self.region
 
@@ -83,8 +89,8 @@ class ACSQueryConnection(ACSAuthConnection):
         super(ACSQueryConnection, self).__init__(
             acs_access_key_id,
             acs_secret_access_key,
+            security_token,
             region=region,
-            security_token=security_token,
             provider=provider,
             user_agent=user_agent)
 
@@ -123,6 +129,10 @@ class ACSQueryConnection(ACSAuthConnection):
 
     def make_request(self, action, params=None):
         conn = client.AcsClient(self.acs_access_key_id, self.acs_secret_access_key, self.region, user_agent=self.user_agent)
+
+        if self.security_token:
+            sts_token_credential = StsTokenCredential(self.access_key, self.secret_key, self.security_token)
+            conn = client.AcsClient(region_id=self.region, user_agent=self.user_agent, credential=sts_token_credential)
         if not conn:
             footmark.log.error('%s %s' % ('Null AcsClient ', conn))
             raise self.FootmarkClientError('Null AcsClient ', conn)
@@ -276,6 +286,11 @@ class ACSQueryConnection(ACSAuthConnection):
             raise Exception("Request parameters should not be empty.")
 
         conn = client.AcsClient(self.acs_access_key_id, self.acs_secret_access_key, self.region, user_agent=self.user_agent)
+
+        if self.security_token:
+            sts_token_credential = StsTokenCredential(self.access_key, self.secret_key, self.security_token)
+            conn = client.AcsClient(region_id=self.region, user_agent=self.user_agent, credential=sts_token_credential)
+
         if not conn:
             footmark.log.error('%s %s' % ('Null AcsClient ', conn))
             raise self.FootmarkClientError('Null AcsClient ', conn)

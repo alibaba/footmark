@@ -30,8 +30,8 @@ class Provider(object):
     secret_key = property(get_secret_key, set_secret_key)
 
     def get_security_token(self):
-        if self._credentials_need_refresh():
-            self._populate_keys_from_metadata_server()
+        # if self._credentials_need_refresh():
+        #     self._populate_keys_from_metadata_server()
         return self._security_token
 
     def set_security_token(self, value):
