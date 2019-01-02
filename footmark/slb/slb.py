@@ -1,5 +1,5 @@
 """
-Represents an SLB Security Group
+Represents an SLB
 """
 from footmark.slb.slbobject import TaggedSLBObject
 
@@ -181,7 +181,8 @@ class LoadBalancerListener(TaggedSLBObject):
         describe load balance listener attribute
         '''
         return self.connection.describe_load_balancer_listener_attribute(load_balancer_id, self.listener_port, listener_type)
-        
+
+
 class LoadBalancer(TaggedSLBObject):
     def __init__(self, connection=None, owner_id=None,
                  name=None, description=None, id=None):
@@ -203,31 +204,32 @@ class LoadBalancer(TaggedSLBObject):
         if name == 'name':
             self.load_balancer_name = value
         super(TaggedSLBObject, self).__setattr__(name, value)
-    
+
     def set_status(self, load_balancer_status):
         '''
         set load balancer status
         '''
         return self.connection.set_load_balancer_status(self.load_balancer_id, load_balancer_status)
-    
+
     def modify_name(self, new_name):
         '''
         modify load balancer name
         '''
         return self.connection.set_load_balancer_name(self.load_balancer_id, new_name)
-    
+
     def modify_spec(self, internet_charge_type=None, bandwidth=None):
         '''
         modify load balancer name
         '''
         return self.connection.modify_slb_internet_spec(self.load_balancer_id, internet_charge_type=internet_charge_type, bandwidth=bandwidth)
-    
+
     def delete(self):
         '''
-        delete load balance 
+        delete load balance
         '''
         return self.connection.delete_load_balancer(self.load_balancer_id)
-    
+
+
 class BackendServer(TaggedSLBObject):
     def __init__(self, connection=None, owner_id=None,
                  name=None, description=None, id=None):
