@@ -2,6 +2,7 @@
 
 IMPROVEMENTS:
 
+- Improve slb instance by using kwargs ([#22](https://github.com/alibaba/footmark/pull/22))
 - Improve eip connection ([#21](https://github.com/alibaba/footmark/pull/21))
 - Merge inner_ip and private_ip, and merge eip and public_ip ([#17](https://github.com/alibaba/footmark/pull/17))
 

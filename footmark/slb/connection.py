@@ -3,12 +3,13 @@
 Represents a connection to the SLB service.
 """
 
-import time
 import json
 from footmark.connection import ACSQueryConnection
 from footmark.slb.regioninfo import RegionInfo
 from footmark.exception import SLBResponseError
-from footmark.slb.slb import LoadBalancer, BackendServer, VServerGroup, LoadBalancerListener
+from footmark.slb.slb import BackendServer, VServerGroup, LoadBalancerListener
+from footmark.slb.load_balancer import LoadBalancer
+# from aliyunsdkslb.request.v20140515.DescribeLoadBalancersRequest import
 
 
 class SLBConnection(ACSQueryConnection):
@@ -34,7 +35,74 @@ class SLBConnection(ACSQueryConnection):
         super(SLBConnection, self).__init__(acs_access_key_id,
                                             acs_secret_access_key,
                                             self.region, self.SLBSDK, security_token, user_agent=user_agent)
-    
+
+    def format_slb_request_kwargs(self, **kwargs):
+        for key, value in kwargs.items():
+
+            # Format Vswitch to VSwitch
+            if key == 'Action':
+                if str(value).find("Vserver"):
+                    kwargs[key] = str(value).replace("Vserver", "VServer")
+
+        return kwargs
+
+    def create_load_balancer(self, **kwargs):
+
+        slb_id = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), LoadBalancer).load_balancer_id
+        return self.describe_load_balancer_attribute(**{'load_balancer_id': slb_id})
+
+    def describe_load_balancers(self, **kwargs):
+        """
+        Describe Load Balancers
+        :type load_balancer_id: string
+        :param load_balancer_id: id of the load balancer
+        :type load_balancer_name: string
+        :param load_balancer_name: name of the load balancer
+        :return: load balance in dictionary format if found else None
+        """
+        balancers = []
+        resp = self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['LoadBalancers', LoadBalancer])
+        if len(resp) > 0:
+            for b in resp:
+                balancers.append(self.describe_load_balancer_attribute(**{'load_balancer_id': b.load_balancer_id}))
+        return balancers
+
+    def describe_load_balancer_attribute(self, **kwargs):
+        """
+        Describe attributes of Load Balancer
+        :type load_balancer_id: string
+        :param load_balancer_id: id of the load balancer
+        :return: load balance attributes in dictionary format if found else None
+        """
+
+        return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), LoadBalancer)
+
+    def modify_load_balancer_internet_spec(self, **kwargs):
+        """
+        Modify internet specifications of existing LoadBalancer, like internet_charge_type or bandwidth
+        :type load_balancer_id: str
+        :param load_balancer_id: The unique ID of an Server Load Balancer instance
+        :type internet_charge_type: str
+        :param internet_charge_type: Charging mode for the public network instance
+        :type bandwidth: int
+        :param bandwidth: Bandwidth peak of the public network instance charged per fixed bandwidth
+        :return: returns the request_id of request
+        """
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def set_load_balancer_status(self, **kwargs):
+        """
+        Method added to Set Load Balancer Status
+        :type load_balancer_id: List
+        :param load_balancer_id: ID of server load balancer
+        :type load_balancer_status: String
+        :param load_balancer_status: Status of an Server Load Balancer instance
+            Value: inactive | active
+        :return: return name of the operating interface, which is
+            specified in the system
+        """
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
     def describe_vserver_group_attribute(self, vserver_group_id):
         """
         describe vserver group
@@ -198,51 +266,7 @@ class SLBConnection(ACSQueryConnection):
         params = {}
         self.build_list_params(params, vserver_group_id, 'VServerGroupId')
         
-        return self.get_status('DeleteVServerGroup', params)    
-
-    def create_load_balancer(self, load_balancer_name=None, address_type=None, vswitch_id=None, client_token=None,
-                             internet_charge_type=None, master_zone_id=None, slave_zone_id=None, bandwidth=None):
-        """
-        Creates a Server Load Balancer
-        :type load_balancer_name: string
-        :param load_balancer_name: Name to the server load balancer
-        :type address_type: string
-        :param address_type:  Address type. value: internet or intranet
-        :type vswitch_id: string
-        :param vswitch_id: The vswitch id of the VPC instance. This option is invalid if address_type parameter is
-         provided as internet.
-        :type internet_charge_type: string
-        :param internet_charge_type: Charging mode for the public network instance
-         Value: paybybandwidth or paybytraffic
-        :type master_zone_id: string
-        :param master_zone_id: Name of of availability zones to enable on this SLB
-        :type slave_zone_id: string
-        :param slave_zone_id: Name of of availability zones to enable on this SLB
-        :type bandwidth: string
-        :param bandwidth: Bandwidth peak of the public network instance charged per fixed bandwidth
-        :return: return the created load balancer details
-        """
-
-        params = {}
-
-        if load_balancer_name:
-            self.build_list_params(params, load_balancer_name, 'LoadBalancerName')
-        if address_type:
-            self.build_list_params(params, address_type, 'AddressType')
-        if vswitch_id:
-            self.build_list_params(params, vswitch_id, 'VSwitchId')
-        if internet_charge_type:
-            self.build_list_params(params, internet_charge_type, 'InternetChargeType')
-        if master_zone_id:
-            self.build_list_params(params, master_zone_id, 'MasterZoneId')
-        if slave_zone_id:
-            self.build_list_params(params, slave_zone_id, 'SlaveZoneId')
-        if bandwidth:
-            self.build_list_params(params, bandwidth, 'Bandwidth')
-        if client_token:
-            self.build_list_params(params, client_token, 'ClientToken')
-        slb = self.get_object('CreateLoadBalancer', params, LoadBalancer)
-        return self.describe_load_balancer_attribute(slb.id)
+        return self.get_status('DeleteVServerGroup', params)
 
     def add_listeners(self, load_balancer_id, purge_listener=None, listeners=None):
         """
@@ -918,24 +942,6 @@ class SLBConnection(ACSQueryConnection):
 
         return self.get_list('DescribeHealthStatus', params, ["BackendServers", BackendServer])
 
-    def set_load_balancer_status(self, load_balancer_id, load_balancer_status):
-        """
-        Method added to Set Load Balancer Status
-        :type load_balancer_id: List
-        :param load_balancer_id: ID of server load balancer
-        :type load_balancer_status: String
-        :param load_balancer_status: Status of an Server Load Balancer instance
-            Value: inactive | active
-        :return: return name of the operating interface, which is
-            specified in the system
-        """
-        params = {}
-       
-        self.build_list_params(params, load_balancer_id, 'LoadBalancerId')        
-        self.build_list_params(params, load_balancer_status, 'LoadBalancerStatus')
-        
-        return self.get_status('SetLoadBalancerStatus', params)
-
     def set_load_balancer_name(self, load_balancer_id, load_balancer_name):
         """
         Set name or alias to the ServerLoadBalancer
@@ -965,62 +971,7 @@ class SLBConnection(ACSQueryConnection):
         params = {}
 
         self.build_list_params(params, slb_id, 'LoadBalancerId')
-        return self.get_status('DeleteLoadBalancer', params)   
-        
-    def modify_slb_internet_spec(self, load_balancer_id, internet_charge_type=None, bandwidth=None):
-        """
-        Modify internet specifications of existing LoadBalancer, like internet_charge_type or bandwidth
-        :type load_balancer_id: str
-        :param load_balancer_id: The unique ID of an Server Load Balancer instance
-        :type internet_charge_type: str
-        :param internet_charge_type: Charging mode for the public network instance
-        :type bandwidth: int
-        :param bandwidth: Bandwidth peak of the public network instance charged per fixed bandwidth
-        :return: returns the request_id of request
-        """
-        
-        results = []
-     
-        params = {}  
-
-        self.build_list_params(params, load_balancer_id, 'LoadBalancerId')
-        if internet_charge_type:
-            self.build_list_params(params, internet_charge_type, 'InternetChargeType')
-        if bandwidth:
-            self.build_list_params(params, bandwidth, 'Bandwidth')
-        return self.get_status('ModifyLoadBalancerInternetSpec', params)
-    
-
-    def describe_load_balancer_attribute(self, load_balancer_id):
-        """
-        Describe attributes of Load Balancer
-        :type load_balancer_id: string
-        :param load_balancer_id: id of the load balancer
-        :return: load balance attributes in dictionary format if found else None
-        """
-
-        params = {}
-
-        self.build_list_params(params, load_balancer_id, 'LoadBalancerId')
-
-        return self.get_object('DescribeLoadBalancerAttribute', params, LoadBalancer)
-    
-    def describe_load_balancers(self, load_balancer_id = None, load_balancer_name = None):
-        """
-        Describe Load Balancers
-        :type load_balancer_id: string
-        :param load_balancer_id: id of the load balancer
-        :type load_balancer_name: string
-        :param load_balancer_name: name of the load balancer
-        :return: load balance in dictionary format if found else None
-        """
-
-        params = {}
-        if load_balancer_id:
-            self.build_list_params(params, load_balancer_id, 'LoadBalancerId')
-        if load_balancer_name:
-            self.build_list_params(params, load_balancer_name, 'LoadBalancerName')
-        return self.get_list('DescribeLoadBalancers', params,  ['LoadBalancers', LoadBalancer])
+        return self.get_status('DeleteLoadBalancer', params)
 
     def add_vservergroup_backend_server(self, vserver_group_id, backend_servers):
         """
