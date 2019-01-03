@@ -7,9 +7,10 @@ import json
 from footmark.connection import ACSQueryConnection
 from footmark.slb.regioninfo import RegionInfo
 from footmark.exception import SLBResponseError
-from footmark.slb.slb import BackendServer, VServerGroup, LoadBalancerListener
+from footmark.slb.slb import BackendServer, LoadBalancerListener
 from footmark.slb.load_balancer import LoadBalancer
-# from aliyunsdkslb.request.v20140515.DescribeLoadBalancersRequest import
+from footmark.slb.vserver_group import VServerGroup
+# from aliyunsdkslb.request.v20140515.AddBackendServersRequest import
 
 
 class SLBConnection(ACSQueryConnection):
@@ -102,32 +103,8 @@ class SLBConnection(ACSQueryConnection):
             specified in the system
         """
         return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
-
-    def describe_vserver_group_attribute(self, vserver_group_id):
-        """
-        describe vserver group
-        :type vserver_group_id: string
-        :param vserver_group_id: Unique identifier for the virtual server group
-        :return: return the vserver group object
-        """
-        params = {}
-        self.build_list_params(params, vserver_group_id, 'VServerGroupId')
-
-        return self.get_object('DescribeVServerGroupAttribute', params, VServerGroup)
     
-    def  describe_vserver_groups(self, load_balancer_id):
-        """
-        describe vserver group
-        :type vserver_group_id: string
-        :param vserver_group_id: Unique identifier for the virtual server group
-        :return: return the vserver group object
-        """
-        params = {}
-        self.build_list_params(params, load_balancer_id, 'LoadBalancerId')
-        
-        return self.get_object('DescribeVServerGroups', params, ['VServerGroups' ,VServerGroup])
-    
-    def create_vserver_group(self, load_balancer_id, vserver_group_name, backend_servers):
+    def create_vserver_group(self, **kwargs):
         """
         create vserver group
         :type vserver_group_id: string
@@ -138,21 +115,33 @@ class SLBConnection(ACSQueryConnection):
         :param backend_servers:Backend server list
         :return: return the vserver group object
         """
-        params = {}
-        backend_serverlist = []
-        self.build_list_params(params, load_balancer_id, 'LoadBalancerId')
-        self.build_list_params(params, vserver_group_name, 'VServerGroupName')
-        for servers in backend_servers:
-            backend_serverlist.append({
-                'ServerId': servers['instance_id'],
-                'Port': servers['port'],
-                'Weight': servers['weight']
-            })
-        self.build_list_params(params, backend_serverlist, 'BackendServers')
-        
-        return self.get_object('CreateVServerGroup', params, VServerGroup)
+        group_id = self.get_object_new(self.build_request_params(self.format_slb_request_kwargs(**self.format_request_kwargs(**kwargs))), VServerGroup).vserver_group_id
+        return self.describe_vserver_group_attribute(**{'vserver_group_id': group_id})
+
+    def describe_vserver_groups(self, **kwargs):
+        """
+        describe vserver group
+        :type vserver_group_id: string
+        :param vserver_group_id: Unique identifier for the virtual server group
+        :return: return the vserver group object
+        """
+        groups = []
+        resp = self.get_list_new(self.build_request_params(self.format_slb_request_kwargs(**self.format_request_kwargs(**kwargs))), ['VServerGroups',VServerGroup])
+        if len(resp) > 0:
+            for b in resp:
+                groups.append(self.describe_vserver_group_attribute(**{'vserver_group_id': b.vserver_group_id}))
+        return groups
+
+    def describe_vserver_group_attribute(self, **kwargs):
+        """
+        describe vserver group
+        :type vserver_group_id: string
+        :param vserver_group_id: Unique identifier for the virtual server group
+        :return: return the vserver group object
+        """
+        return self.get_object_new(self.build_request_params(self.format_slb_request_kwargs(**self.format_request_kwargs(**kwargs))), VServerGroup)
     
-    def set_vserver_group_attribute(self, vserver_group_id, vserver_group_name = '', backend_servers = []):
+    def set_vserver_group_attribute(self, **kwargs):
         """
         set vserver group attribute
         :type vserver_group_id: string
@@ -163,23 +152,9 @@ class SLBConnection(ACSQueryConnection):
         :param backend_servers:Backend server list
         :return: return the vserver group object
         """
-        params = {}
-        backend_serverlist = []
-        self.build_list_params(params, vserver_group_id, 'VServerGroupId')
-        if vserver_group_name:
-            self.build_list_params(params, vserver_group_name, 'VServerGroupName')
-        if backend_servers:
-            for servers in backend_servers:
-                backend_serverlist.append({
-                    'ServerId': servers['instance_id'],
-                    'Port': servers['port'],
-                    'Weight': servers['weight']
-                })
-            self.build_list_params(params, backend_serverlist, 'BackendServers')
-        
-        return self.get_object('SetVServerGroupAttribute', params, VServerGroup)
+        return self.get_status_new(self.build_request_params(self.format_slb_request_kwargs(**self.format_request_kwargs(**kwargs))))
     
-    def add_vserver_group_backend_servers(self, vserver_group_id, backend_servers):
+    def add_vserver_group_backend_servers(self, **kwargs):
         """
         add vserver group backend servers
         :type vserver_group_id: string
@@ -188,21 +163,9 @@ class SLBConnection(ACSQueryConnection):
         :param backend_servers:Backend server list
         :return: return the vserver group object
         """
-        params = {}
-        backend_serverlist = []
-        self.build_list_params(params, vserver_group_id, 'VServerGroupId')
-        self.build_list_params(params, backend_servers, 'BackendServers')
-        for servers in backend_servers:
-            backend_serverlist.append({
-                'ServerId': servers['instance_id'],
-                'Port': servers['port'],
-                'Weight': servers['weight']
-            })
-        self.build_list_params(params, backend_serverlist, 'BackendServers')
-        
-        return self.get_object('AddVServerGroupBackendServers', params, VServerGroup)
+        return self.get_status_new(self.build_request_params(self.format_slb_request_kwargs(**self.format_request_kwargs(**kwargs))))
     
-    def remove_vserver_group_backend_servers(self, vserver_group_id, backend_servers):
+    def remove_vserver_group_backend_servers(self, **kwargs):
         """
         remove vserver group backend servers
         :type vserver_group_id: string
@@ -211,19 +174,9 @@ class SLBConnection(ACSQueryConnection):
         :param backend_servers:Backend server list
         :return: return the vserver group object
         """
-        params = {}
-        backend_serverlist = []
-        self.build_list_params(params, vserver_group_id, 'VServerGroupId')
-        for servers in backend_servers:
-            backend_serverlist.append({
-                'ServerId': servers['instance_id'],
-                'Port': servers['port']
-            })
-        self.build_list_params(params, backend_serverlist, 'BackendServers')
-        
-        return self.get_object('RemoveVServerGroupBackendServers', params, VServerGroup)
+        return self.get_status_new(self.build_request_params(self.format_slb_request_kwargs(**self.format_request_kwargs(**kwargs))))
     
-    def modify_vserver_group_backend_servers(self, vserver_group_id, old_backend_servers = [], new_backend_servers = []):
+    def modify_vserver_group_backend_servers(self, **kwargs):
         """
         modify vserver group backend servers
         :type vserver_group_id: string
@@ -234,39 +187,16 @@ class SLBConnection(ACSQueryConnection):
         :param new_backend_servers:new backend server list
         :return: return the vserver group object
         """
-        params = {}
-        old_backend_serverlist = []
-        new_backend_serverlist = []
-        self.build_list_params(params, vserver_group_id, 'VServerGroupId')
-        if old_backend_servers:
-            for servers in old_backend_servers:
-                old_backend_serverlist.append({
-                    'ServerId': servers['instance_id'],
-                    'Port': servers['port']
-            })
-            self.build_list_params(params, old_backend_serverlist, 'OldBackendServers')
-        if new_backend_servers:
-            for servers in new_backend_servers:
-                new_backend_serverlist.append({
-                    'ServerId': servers['instance_id'],
-                    'Port': servers['port'],
-                    'Weight': servers['weight']
-            })
-            self.build_list_params(params, new_backend_serverlist, 'NewBackendServers')
-        
-        return self.get_object('ModifyVServerGroupBackendServers', params, VServerGroup)
+        return self.get_status_new(self.build_request_params(self.format_slb_request_kwargs(**self.format_request_kwargs(**kwargs))))
     
-    def delete_vserver_group(self, vserver_group_id):
+    def delete_vserver_group(self, **kwargs):
         """
         delete vserver group
         :type load_balancer_id: string
         :param vserver_group_id: Unique identifier for the virtual server group
         :return: return bool
         """
-        params = {}
-        self.build_list_params(params, vserver_group_id, 'VServerGroupId')
-        
-        return self.get_status('DeleteVServerGroup', params)
+        return self.get_status_new(self.build_request_params(self.format_slb_request_kwargs(**self.format_request_kwargs(**kwargs))))
 
     def add_listeners(self, load_balancer_id, purge_listener=None, listeners=None):
         """

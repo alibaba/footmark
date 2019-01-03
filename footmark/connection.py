@@ -18,14 +18,10 @@ import inspect
 import base64
 import uuid
 from footmark.resultset import ResultSet
-
-from pprint import pprint
-
 from aliyunsdkcore import client
 from aliyunsdkcore.acs_exception.exceptions import ServerException
 from aliyunsdkcore.auth.credentials import StsTokenCredential
 # from aliyunsdkecs.request.v20140526.DescribeNetworkInterfacesRequest import
-
 
 
 class ACSAuthConnection(object):
