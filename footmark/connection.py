@@ -365,6 +365,13 @@ class ACSQueryConnection(ACSAuthConnection):
                 if not value:
                     continue
                 kwargs[key] = json.dumps(value)
+            if key in ["page_size", "page_number"]:
+                try:
+                    if value and int(value):
+                        kwargs[key] = json.dumps(int(value))
+                    continue
+                except Exception as e:
+                    raise e
             # Convert Tags
             if key == "tags":
                 kwargs[key] = self.convert_tags(value)

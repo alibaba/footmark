@@ -1,4 +1,9 @@
 ## 1.10.0 (Unreleased)
+
+IMPROVEMENTS:
+
+- Improve connection/format_request_kwargs to foramt page_size ([#24](https://github.com/alibaba/footmark/pull/24))
+
 ## 1.9.0 (4 January, 2019)
 
 IMPROVEMENTS:
