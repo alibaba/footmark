@@ -1,4 +1,9 @@
 ## 1.11.0 (Unreleased)
+
+BUG FIXES:
+
+- Fix slb server group modifying bug results from data type ([#28](https://github.com/alibaba/footmark/pull/28))
+
 ## 1.10.0 (12 March, 2019)
 
 IMPROVEMENTS:
