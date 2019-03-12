@@ -2,7 +2,11 @@
 
 IMPROVEMENTS:
 
-- Improve connection/format_request_kwargs to foramt page_size ([#24](https://github.com/alibaba/footmark/pull/24))
+- Improve connection/format_request_kwargs to foramt page_size ([#25](https://github.com/alibaba/footmark/pull/25))
+
+BUG FIXES:
+
+- Fix slb server group modifying bug ([#26](https://github.com/alibaba/footmark/pull/26))
 
 ## 1.9.0 (4 January, 2019)
 

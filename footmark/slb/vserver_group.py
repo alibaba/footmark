@@ -36,8 +36,9 @@ class VServerGroup(TaggedSLBObject):
             for old in self.backend_servers['backend_server']:
                 for new in backend_servers:
                     if new['server_id'] == old['server_id']:
-                        if new != old:
-                            set.append(new)
+                        for key in old.keys():
+                            if key in new and old[key] != new[key]:
+                                set.append(new)
             if set:
                 params = {'vserver_group_id': self.vserver_group_id}
                 for index in range(0, len(set), 20):
@@ -105,9 +106,11 @@ class VServerGroup(TaggedSLBObject):
             for o in self.backend_servers['backend_server']:
                 for n in backend_servers:
                     if o['server_id'] == n['server_id']:
-                        if n != o:
-                            old.append(o)
-                            new.append(n)
+                        for key in o.keys():
+                            if key in n and o[key] != n[key]:
+                                old.append(o)
+                                new.append(n)
+                                break
         if old and new:
             params = {'vserver_group_id': self.vserver_group_id}
             for index in range(0, len(old), 20):
