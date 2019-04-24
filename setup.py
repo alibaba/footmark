@@ -16,7 +16,6 @@ PACKAGE = "footmark"
 NAME = "footmark"
 DESCRIPTION = "A Python interface to Aliyun Web Services"
 AUTHOR = "xiaozhu"
-AUTHOR_EMAIL = "heguimin36@163.com"
 VERSION = __import__(PACKAGE).__version__
 
 here = path.abspath(path.dirname(__file__))
@@ -41,7 +40,7 @@ setup(
 
     # Author details
     author=AUTHOR,
-    author_email=AUTHOR_EMAIL,
+    author_email="guimin.hgm@alibaba-inc.com",
 
     # Choose your license
     license='MIT',
