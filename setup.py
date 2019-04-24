@@ -17,7 +17,6 @@ NAME = "footmark"
 DESCRIPTION = "A Python interface to Aliyun Web Services"
 AUTHOR = "xiaozhu"
 AUTHOR_EMAIL = "heguimin36@163.com"
-URL = ""
 VERSION = __import__(PACKAGE).__version__
 
 here = path.abspath(path.dirname(__file__))
@@ -38,7 +37,7 @@ setup(
     long_description=long_description,
 
     # The project's main homepage.
-    url=URL,
+    url="https://github.com/alibaba/footmark",
 
     # Author details
     author=AUTHOR,
