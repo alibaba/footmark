@@ -1,4 +1,11 @@
-## 1.12.0 (Unreleased)
+## 1.13.0 (Unreleased)
+
+## 1.12.0 (10 July, 2019)
+
+IMPROVEMENTS:
+
+- Improve performance of method describe_instances ([#32](https://github.com/alibaba/footmark/pull/32))
+
 ## 1.11.0 (12 March, 2019)
 
 BUG FIXES:
