@@ -4,6 +4,7 @@
 
 IMPROVEMENTS:
 
+- Publish release 1.12.0 ([#33](https://github.com/alibaba/footmark/pull/33))
 - Improve performance of method describe_instances ([#32](https://github.com/alibaba/footmark/pull/32))
 
 ## 1.11.0 (12 March, 2019)
