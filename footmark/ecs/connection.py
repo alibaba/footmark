@@ -287,13 +287,7 @@ class ECSConnection(ACSQueryConnection):
         :return: A list of  :class:`footmark.ecs.instance`
 
         """
-        instances = []
-        for inst in self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Instances', Instance]):
-            volumes = self.describe_disks(instance_id=inst.id)
-            setattr(inst, 'block_device_mapping', volumes)
-            setattr(inst, 'user_data', base64.b64decode(self.get_object_new(self.build_request_params({"instance_id": inst.id, "Action": "DescribeUserData"}), ResultSet).user_data))
-            instances.append(inst)
-        return instances
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Instances', Instance])
 
     def start_instances(self, **kwargs):
         """
@@ -1297,3 +1291,6 @@ class ECSConnection(ACSQueryConnection):
 
     def remove_tags(self, **kwargs):
         return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def describe_user_data(self, **kwargs):
+        return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet)

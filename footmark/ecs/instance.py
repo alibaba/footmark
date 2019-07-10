@@ -1,6 +1,7 @@
 """
 Represents an ECS Instance
 """
+import base64
 from footmark.ecs.ecsobject import TaggedECSObject
 
 
@@ -224,6 +225,9 @@ class Instance(TaggedECSObject):
             return False
         return self.connection.allocate_public_ip_address(instance_id=self.id)
 
+    def describe_user_data(self):
+        return base64.b64decode(self.connection.describe_user_data(instance_id=self.id).user_data)
+
     def read(self):
         instance = {"gpu": {"amount": 0, "spec": ""}, "private_ip_address": self.private_ip_address}
         for name, value in self.__dict__.items():
@@ -235,7 +239,7 @@ class Instance(TaggedECSObject):
             if name == "instance_id":
                 instance['id'] = value
 
-            if name == "block_device_mapping":
+            if name == "block_device_mappings":
                 volumes = []
                 for disk in value:
                     volumes.append({
