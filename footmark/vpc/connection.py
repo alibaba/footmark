@@ -18,7 +18,7 @@ from aliyunsdkcore.acs_exception.exceptions import ServerException
 class VPCConnection(ACSQueryConnection):
     SDKVersion = '2016-04-28'
     DefaultRegionId = 'cn-hangzhou'
-    DefaultRegionName = u'杭州'.encode("UTF-8")
+    DefaultRegionName = '杭州'.encode("UTF-8")
     ResponseError = VPCResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
@@ -45,7 +45,7 @@ class VPCConnection(ACSQueryConnection):
             return
 
         flag = 1
-        for key, value in filters.items():
+        for key, value in list(filters.items()):
             acs_key = key
             if acs_key.startswith('tag:'):
                 while ('set_Tag%dKey' % flag) in params:
@@ -71,7 +71,7 @@ class VPCConnection(ACSQueryConnection):
             self.build_filters_params(params, value)
 
     def format_vpc_request_kwargs(self, **kwargs):
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
 
             # Format Vswitch to VSwitch
             if key == 'Action':
@@ -219,7 +219,7 @@ class VPCConnection(ACSQueryConnection):
                 if table.route_entrys:
                     for entry in table.route_entrys['route_entry']:
                         route_entry = RouteEntry(self)
-                        for k, v in entry.items():
+                        for k, v in list(entry.items()):
                             setattr(route_entry, k, v)
                         route_entries.append(route_entry)
 
