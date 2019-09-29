@@ -64,7 +64,7 @@ class SecurityGroup(TaggedECSObject):
         for per in self.permissions:
             if per.get('direction', "") != direction:
                 continue
-            for key, value in rule.items():
+            for key, value in list(rule.items()):
                 if value != per.get(key, ""):
                     find = False
                     break
@@ -75,7 +75,7 @@ class SecurityGroup(TaggedECSObject):
         if find:
             return False
         params = {}
-        for k, v in rule.items():
+        for k, v in list(rule.items()):
             params[k] = v
         params["security_group_id"] = self.id
         if direction == 'ingress':
@@ -91,7 +91,7 @@ class SecurityGroup(TaggedECSObject):
         for per in self.permissions:
             if per.get('direction', "") != direction:
                 continue
-            for key, value in rule.items():
+            for key, value in list(rule.items()):
                 if value != per.get(key, ""):
                     find = False
                     break
@@ -102,7 +102,7 @@ class SecurityGroup(TaggedECSObject):
         if not find:
             return False
         params = {}
-        for k, v in rule.items():
+        for k, v in list(rule.items()):
             params[k] = v
         params["security_group_id"] = self.id
         if direction == 'ingress':
@@ -124,8 +124,8 @@ class SecurityGroup(TaggedECSObject):
     def read(self):
         group = {}
         ingresses = []
-        egresses  = []
-        for name, value in self.__dict__.items():
+        egresses = []
+        for name, value in list(self.__dict__.items()):
             if name in ["connection", "region_id", "region", "request_id"]:
                 continue
 

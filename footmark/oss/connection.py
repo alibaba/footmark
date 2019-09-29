@@ -11,7 +11,7 @@ from footmark.exception import OSSResponseError
 
 class OSSConnection(ACSQueryConnection):
     DefaultRegionId = 'cn-hangzhou'
-    DefaultRegionName = u'杭州'.encode("UTF-8")
+    DefaultRegionName = '杭州'.encode("UTF-8")
     DefaultConnectionErrorMsg = "Error in connecting to OSS. This usually occurs due to invalid region"
     ResponseError = OSSResponseError
 

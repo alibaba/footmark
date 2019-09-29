@@ -16,7 +16,7 @@ from footmark.slb.vserver_group import VServerGroup
 class SLBConnection(ACSQueryConnection):
     SDKVersion = '2014-05-15'
     DefaultRegionId = 'cn-hangzhou'
-    DefaultRegionName = u'杭州'.encode("UTF-8")
+    DefaultRegionName = '杭州'.encode("UTF-8")
     ResponseError = SLBResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
@@ -38,7 +38,7 @@ class SLBConnection(ACSQueryConnection):
                                             self.region, self.SLBSDK, security_token, user_agent=user_agent)
 
     def format_slb_request_kwargs(self, **kwargs):
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
 
             # Format Vswitch to VSwitch
             if key == 'Action':
@@ -222,11 +222,11 @@ class SLBConnection(ACSQueryConnection):
             # if purge_listener is true then delete existing listeners
             if purge_listener:
                 if slb_details:
-                    if len(slb_details[u'ListenerPortsAndProtocal'][u'ListenerPortAndProtocal']) > 0:
-                        for slb_listener in slb_details[u'ListenerPortsAndProtocal'][u'ListenerPortAndProtocal']:
+                    if len(slb_details['ListenerPortsAndProtocal']['ListenerPortAndProtocal']) > 0:
+                        for slb_listener in slb_details['ListenerPortsAndProtocal']['ListenerPortAndProtocal']:
                             params = {}
                             self.build_list_params(params, load_balancer_id, 'LoadBalancerId')
-                            self.build_list_params(params, slb_listener[u'ListenerPort'], 'ListenerPort')
+                            self.build_list_params(params, slb_listener['ListenerPort'], 'ListenerPort')
                             response = self.get_status('DeleteLoadBalancerListener', params)
                             deleted_listener.append(response)
                             changed = True
@@ -773,9 +773,9 @@ class SLBConnection(ACSQueryConnection):
             # List all Backend Servers
             self.build_list_params(params, load_balancer_id, 'LoadBalancerId')
             response = self.get_status('DescribeLoadBalancerAttribute', params)
-            for instance in response[u'BackendServers'][u'BackendServer']:
+            for instance in response['BackendServers']['BackendServer']:
                 # append id of all Backend Servers to list
-                instances.append(str(instance[u'ServerId']))
+                instances.append(str(instance['ServerId']))
 
             # Remove instances only when purge_instance_ids is True
             if len(instances) > 0 and (purge_instance_ids is True):

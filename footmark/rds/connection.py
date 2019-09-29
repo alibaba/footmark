@@ -19,7 +19,7 @@ from footmark.exception import RDSResponseError
 class RDSConnection(ACSQueryConnection):
     SDKVersion = '2014-08-15'
     DefaultRegionId = 'cn-hangzhou'
-    DefaultRegionName = u'杭州'.encode("UTF-8")
+    DefaultRegionName = '杭州'.encode("UTF-8")
     ResponseError = RDSResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
@@ -170,48 +170,48 @@ class RDSConnection(ACSQueryConnection):
             time.sleep(240)
             # Start newly created Instance
             # wait until instance status becomes running         
-            if allocate_public_ip and self.check_instance_status(results_instance[u'DBInstanceId']):
+            if allocate_public_ip and self.check_instance_status(results_instance['DBInstanceId']):
                 if connection_string_prefix and public_port:
                     if instance_net_type == "Intranet":
                         changed_conn_str, result_conn_str = \
-                            self.create_instance_public_connection_string(results_instance[u'DBInstanceId'],
+                            self.create_instance_public_connection_string(results_instance['DBInstanceId'],
                                                                           connection_string_prefix, public_port)
                     elif instance_net_type == "Internet":
                         changed_conn_str, result_conn_str = \
-                            self.modify_instance_public_connection(results_instance[u'DBInstanceId'], 
-                                                                   results_instance[u'ConnectionString'],
+                            self.modify_instance_public_connection(results_instance['DBInstanceId'],
+                                                                   results_instance['ConnectionString'],
                                                                    connection_string_prefix, public_port)
             
                     if 'error' in (''.join(str(result_conn_str))).lower():
                         results.append(result_conn_str)
                            
-            if self.check_instance_status(results_instance[u'DBInstanceId']):
+            if self.check_instance_status(results_instance['DBInstanceId']):
                 if db_name or character_set_name: 
-                    changed_create_db, result_create_db = self.create_database(results_instance[u'DBInstanceId'],
+                    changed_create_db, result_create_db = self.create_database(results_instance['DBInstanceId'],
                                                                                db_name, db_description,
                                                                                character_set_name)
             
                     if 'error' in (''.join(str(result_create_db))).lower():
                         results.append(result_create_db)                      
               
-            if maint_window and self.check_instance_status(results_instance[u'DBInstanceId']):
+            if maint_window and self.check_instance_status(results_instance['DBInstanceId']):
                 changed_maint_window, result_maint_window = \
-                    self.modify_db_instance_maint_time(results_instance[u'DBInstanceId']
+                    self.modify_db_instance_maint_time(results_instance['DBInstanceId']
                                                             , maint_window)
                 if 'error' in (''.join(str(result_maint_window))).lower():
                     results.append(result_maint_window) 
             
             if preferred_backup_time and preferred_backup_period:               
-                if self.check_instance_status(results_instance[u'DBInstanceId']):
+                if self.check_instance_status(results_instance['DBInstanceId']):
                     changed_backup_policy, result_backup_policy = \
-                        self.modify_backup_policy(results_instance[u'DBInstanceId'],
+                        self.modify_backup_policy(results_instance['DBInstanceId'],
                                                   preferred_backup_time, preferred_backup_period,
                                                   backup_retention_period)
                     if 'error' in (''.join(str(result_backup_policy))).lower():
                         results.append(result_backup_policy) 
                
             if db_tags:
-                changed_tags, result_db_tags = self.bind_tags(results_instance[u'DBInstanceId'], db_tags) 
+                changed_tags, result_db_tags = self.bind_tags(results_instance['DBInstanceId'], db_tags)
                 if 'error' in (''.join(str(result_db_tags))).lower():
                     results.append(result_db_tags)                                    
 
@@ -367,7 +367,7 @@ class RDSConnection(ACSQueryConnection):
                 try:
                     instance_info = self.get_rds_instances_info(instance_id)
                     if instance_info:
-                        if int(instance_info[1][u'TotalRecordCount']) == 1:
+                        if int(instance_info[1]['TotalRecordCount']) == 1:
                             instance_status = "Present"
                             break
                         else:
@@ -477,9 +477,9 @@ class RDSConnection(ACSQueryConnection):
             try:
                 instance_info = self.get_rds_instances_info(instance_id)
                 if instance_info:    
-                    if instance_info[1][u'Items'][u'DBInstance'][0][u'DBInstanceStatus'] \
+                    if instance_info[1]['Items']['DBInstance'][0]['DBInstanceStatus'] \
                             in ['running', 'Running']:
-                        instance_status = instance_info[1][u'Items'][u'DBInstance'][0][u'DBInstanceStatus']
+                        instance_status = instance_info[1]['Items']['DBInstance'][0]['DBInstanceStatus']
                         status_flag = True
                     else:
                         time.sleep(15)                           
@@ -1277,9 +1277,9 @@ class RDSConnection(ACSQueryConnection):
             self.build_list_params(params, instance_id, 'DBInstanceId')
             describe_response = self.get_status('DescribeDBInstanceHAConfig', params)
             if describe_response:
-                for describe_config in describe_response[u'HostInstanceInfos'][u'NodeInfo']:
-                    if describe_config[u'NodeType'] == 'Slave':
-                        node = describe_config[u'NodeId']
+                for describe_config in describe_response['HostInstanceInfos']['NodeInfo']:
+                    if describe_config['NodeType'] == 'Slave':
+                        node = describe_config['NodeId']
                         break
                 if node == node_id:
                     if node_id:

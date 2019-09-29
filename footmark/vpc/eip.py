@@ -85,7 +85,7 @@ class Eip(TaggedVPCObject):
 
     def read(self):
         eip = {}
-        for name, value in self.__dict__.items():
+        for name, value in list(self.__dict__.items()):
             if name in ["connection", "region_id", "region", "available_regions", "operation_locks", "resource_group_id",
                         "has_reservation_data", "hdmonitor_status", "isp"]:
                 continue

@@ -29,7 +29,7 @@ from aliyunsdkcore.acs_exception.exceptions import ServerException
 class ECSConnection(ACSQueryConnection):
     SDKVersion = '2014-05-26'
     DefaultRegionId = 'cn-hangzhou'
-    DefaultRegionName = u'杭州'.encode("UTF-8")
+    DefaultRegionName = '杭州'.encode("UTF-8")
     ResponseError = ECSResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
@@ -57,7 +57,7 @@ class ECSConnection(ACSQueryConnection):
             return
 
         flag = 1
-        for key, value in filters.items():
+        for key, value in list(filters.items()):
             acs_key = key
             if acs_key.startswith('tag:'):
                 while ('set_Tag%dKey' % flag) in params:
@@ -85,7 +85,7 @@ class ECSConnection(ACSQueryConnection):
     def build_tags_params(self, params, tags, max_tag_number=None):
         tag_no = 1
         if tags:
-            for key, value in tags.items():
+            for key, value in list(tags.items()):
                 if tag_no > max_tag_number:
                     break
                 if key:
@@ -252,18 +252,17 @@ class ECSConnection(ACSQueryConnection):
         """
         instances = []
         params = {}
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             if key == "instance_ids":
                 value = "[" + str(",").join(value) + "]"
                 kwargs[key] = value
             if key == "tags":
                 tags = []
                 if isinstance(value, dict):
-                    for k, v in value.items():
+                    for k, v in list(value.items()):
                         tags.append({"Key": k, "Value": v})
                 kwargs[key] = value
             kwargs['Action'] = 'DescribeInstances'
-
             for inst in self.get_list_new(self.build_request_params(filters), ['Instances', Instance]):
                 filters = {}
                 filters['instance_id'] = inst.id
@@ -1103,9 +1102,9 @@ class ECSConnection(ACSQueryConnection):
                     break
                 obtained_results = self.get_object('DescribeSnapshots', params, ResultSet)
                 counter += 1
-                if obtained_results and len(obtained_results.snapshots[u'snapshot']) > 0:
-                    status = str(obtained_results.snapshots[u'snapshot'][0][u'status'])
-                    progress = str(obtained_results.snapshots[u'snapshot'][0][u'progress'])
+                if obtained_results and len(obtained_results.snapshots['snapshot']) > 0:
+                    status = str(obtained_results.snapshots['snapshot'][0]['status'])
+                    progress = str(obtained_results.snapshots['snapshot'][0]['progress'])
 
                     if not '100%' in progress:
                         time.sleep(60)
