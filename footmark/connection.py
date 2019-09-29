@@ -1,13 +1,8 @@
 # coding:utf-8
-import sys
-import time
-
-reload(sys)
-sys.setdefaultencoding("utf-8")
 """
 Handles basic connections to ACS
 """
-
+import time
 import footmark
 import importlib
 from footmark.exception import FootmarkServerError
@@ -115,7 +110,7 @@ class ACSQueryConnection(ACSAuthConnection):
 
         # build request params dict, like {'set_InstanceId':'i-12345', 'set_Name':'abcd'}
         if methods:
-            for key, value in filters.items():
+            for key, value in list(filters.items()):
                 if value is None:
                     continue
                 name = str(key).lower().replace("-", "").replace("_", "")
@@ -140,7 +135,7 @@ class ACSQueryConnection(ACSAuthConnection):
                 request = self.import_request(action)
                 request.set_accept_format('json')
                 if params and isinstance(params, dict):
-                    for k, v in params.items():
+                    for k, v in list(params.items()):
                         if hasattr(request, k):
                             getattr(request, k)(v)
                         else:
@@ -173,21 +168,21 @@ class ACSQueryConnection(ACSAuthConnection):
         if not markers[0] and markers[1] is not ResultSet:
             result_set = markers[1](connection)
 
-        for key, value in body.items():
+        for key, value in list(body.items()):
             self.parse_value(value)
             setattr(result_set, self.convert_name(key), value)
 
         if markers[0] and markers[0] in body:
-            for value in getattr(result_set, self.convert_name(markers[0])).itervalues():
+            for value in list(getattr(result_set, self.convert_name(markers[0])).values()):
                 if isinstance(value, list):
                     for sub_value in value:
                         element = markers[1](connection)
-                        for k, v in sub_value.items():
+                        for k, v in list(sub_value.items()):
                             setattr(element, k, v)
                         results.append(element)
                 elif isinstance(value, dict):
                     element = markers[1](connection)
-                    for k, v in value.items():
+                    for k, v in list(value.items()):
                         setattr(element, k, v)
                     results.append(element)
                 else:
@@ -202,13 +197,13 @@ class ACSQueryConnection(ACSAuthConnection):
             for item in value:
                 self.parse_value(item)
         if isinstance(value, dict):
-            for k, v in value.items():
+            for k, v in list(value.items()):
                 if isinstance(v, dict) or isinstance(v, list):
                     self.parse_value(v)
                 else:
                     value.pop(k)
                     value[self.convert_name(k)] = v
-            for k, v in value.items():
+            for k, v in list(value.items()):
                 value.pop(k)
                 value[self.convert_name(k)] = v
         # setattr(element, self.convert_name(key), value)
@@ -303,7 +298,7 @@ class ACSQueryConnection(ACSAuthConnection):
             request = self.import_request(params.get('Action', params.get('action')))
             request.set_accept_format('json')
             try:
-                for k, v in params.items():
+                for k, v in list(params.items()):
                     if hasattr(request, k):
                         getattr(request, k)(v)
                     else:
@@ -325,7 +320,7 @@ class ACSQueryConnection(ACSAuthConnection):
     def convert_tags(self, tags):
         result = []
         if isinstance(tags, dict):
-            for k, v in tags.items():
+            for k, v in list(tags.items()):
                 result.append({"Key": k, "Value": v})
         return result
 
@@ -336,7 +331,7 @@ class ACSQueryConnection(ACSAuthConnection):
         :return: 
         """
         res = ""
-        for key in filter(None, str(text).lower().split('_')):
+        for key in [_f for _f in str(text).lower().split('_') if _f]:
             res += str(key[0]).upper() + key[1:]
         return res
 
@@ -359,7 +354,7 @@ class ACSQueryConnection(ACSAuthConnection):
         return client_token
 
     def format_request_kwargs(self, **kwargs):
-        for key, value in kwargs.items():
+        for key, value in list(kwargs.items()):
             # Format the following parameter to JSON
             if key in ["instance_ids", "disk_ids"]:
                 if not value:

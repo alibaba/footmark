@@ -23,7 +23,7 @@ from footmark.ess.scheduled_task import ScheduledTask
 class ESSConnection(ACSQueryConnection):
     SDKVersion = '2014-08-28'
     DefaultRegionId = 'cn-hangzhou'
-    DefaultRegionName = u'杭州'.encode("UTF-8")
+    DefaultRegionName = '杭州'.encode("UTF-8")
     ResponseError = ECSResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
@@ -49,7 +49,7 @@ class ESSConnection(ACSQueryConnection):
             return
 
         flag = 1
-        for key, value in filters.items():
+        for key, value in list(filters.items()):
             acs_key = key
             if acs_key.startswith('tag:'):
                 while ('set_Tag%dKey' % flag) in params:
@@ -77,7 +77,7 @@ class ESSConnection(ACSQueryConnection):
     def build_tags_params(self, params, tags, max_tag_number=None):
         tag_no = 1
         if tags:
-            for key, value in tags.items():
+            for key, value in list(tags.items()):
                 if tag_no < max_tag_number and key:
                     self.build_list_params(params, key, 'Tag' + bytes(tag_no+1) + 'Key')
                     self.build_list_params(params, value, 'Tag' + bytes(tag_no+1) + 'Value')

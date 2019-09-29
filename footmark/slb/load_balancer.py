@@ -77,7 +77,7 @@ class LoadBalancer(TaggedSLBObject):
 
     def read(self):
         balancer = {}
-        for name, value in self.__dict__.items():
+        for name, value in list(self.__dict__.items()):
             if name in ["connection", "region_id", "region", "region_id_alias", "listener_ports", "create_time_stamp", "end_time_stamp",
                         "request_id", "has_reserved_info", 'listener_ports_and_protocal']:
                 continue

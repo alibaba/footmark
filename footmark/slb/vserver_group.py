@@ -36,7 +36,7 @@ class VServerGroup(TaggedSLBObject):
             for old in self.backend_servers['backend_server']:
                 for new in backend_servers:
                     if new['server_id'] == old['server_id']:
-                        for key in old.keys():
+                        for key in list(old.keys()):
                             if key in new and str(old[key]) != str(new[key]):
                                 set.append(new)
             if set:
@@ -106,7 +106,7 @@ class VServerGroup(TaggedSLBObject):
             for o in self.backend_servers['backend_server']:
                 for n in backend_servers:
                     if o['server_id'] == n['server_id']:
-                        for key in o.keys():
+                        for key in list(o.keys()):
                             if key in n and str(o[key]) != str(n[key]):
                                 old.append(o)
                                 new.append(n)
@@ -134,7 +134,7 @@ class VServerGroup(TaggedSLBObject):
 
     def read(self):
         group = {}
-        for name, value in self.__dict__.items():
+        for name, value in list(self.__dict__.items()):
             if name in ["connection", "region", "request_id"]:
                 continue
             if name == "backend_servers":
@@ -156,7 +156,7 @@ class VServerGroup(TaggedSLBObject):
         backend_servers = []
         for s in servers:
             server = {}
-            for key, value in s.items():
+            for key, value in list(s.items()):
                 split = []
                 for k in str(key).split("_"):
                     split.append(str.upper(k[0])+k[1:])

@@ -55,7 +55,7 @@ class Vpc(TaggedVPCObject):
 
     def read(self):
         vpc = {}
-        for name, value in self.__dict__.items():
+        for name, value in list(self.__dict__.items()):
             if name in ["connection", "region_id", "region"]:
                 continue
 

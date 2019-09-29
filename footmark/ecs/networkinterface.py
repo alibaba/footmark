@@ -110,8 +110,8 @@ class NetworkInterfaceSet(TaggedECSObject):
         """
         if tags:
             remain = {}
-            for key, value in tags.items():
-                if key in self.tags.keys() and value == self.tags[key]:
+            for key, value in list(tags.items()):
+                if key in list(self.tags.keys()) and value == self.tags[key]:
                     continue
                 remain[key] = value
             if remain:
@@ -124,8 +124,8 @@ class NetworkInterfaceSet(TaggedECSObject):
         """
         if tags:
             remain = {}
-            for key, value in tags.items():
-                if key not in self.tags.keys():
+            for key, value in list(tags.items()):
+                if key not in list(self.tags.keys()):
                     continue
                 remain[key] = value
             if remain:
@@ -134,7 +134,7 @@ class NetworkInterfaceSet(TaggedECSObject):
 
     def read(self):
         eni = {}
-        for name, value in self.__dict__.items():
+        for name, value in list(self.__dict__.items()):
             if name in ["connection", "region_id", "region"]:
                 continue
 

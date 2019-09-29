@@ -198,8 +198,8 @@ class Instance(TaggedECSObject):
         """
         remain = {}
         if tags:
-            for key, value in tags.items():
-                if key in self.tags.keys() and value == self.tags[key]:
+            for key, value in list(tags.items()):
+                if key in list(self.tags.keys()) and value == self.tags[key]:
                     continue
                 remain[key] = value
         if remain:
@@ -212,8 +212,8 @@ class Instance(TaggedECSObject):
         """
         remain = {}
         if tags:
-            for key, value in tags.items():
-                if key not in self.tags.keys():
+            for key, value in list(tags.items()):
+                if key not in list(self.tags.keys()):
                     continue
                 remain[key] = value
         if remain:
@@ -230,7 +230,7 @@ class Instance(TaggedECSObject):
 
     def read(self):
         instance = {"gpu": {"amount": 0, "spec": ""}, "private_ip_address": self.private_ip_address}
-        for name, value in self.__dict__.items():
+        for name, value in list(self.__dict__.items()):
             if name in ["connection", "region_id", "region", "security_group_ids", "dedicated_host_attribute", "device_available",
                         "operation_locks", "recyclable", "sale_cycle", "serial_number", "stopped_mode",
                         "vlan_id", "spot_price_limit", "spot_strategy", "cluster_id", "instance_network_type", "start_time"]:
