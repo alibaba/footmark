@@ -139,7 +139,7 @@ class VPCConnection(ACSQueryConnection):
     def delete_vswitch(self, **kwargs):
         return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
 
-    def create_route_entry(self, route_table_id, destination_cidrblock, nexthop_type=None, nexthop_id=None, nexthop_list=None):
+    def create_route_entry(self, **kwargs):
         """
         Create RouteEntry for VPC
         :type route_table_id: str
@@ -151,30 +151,16 @@ class VPCConnection(ACSQueryConnection):
         :type next_hop_id: str
         :param next_hop_id: The ID of next hop.
         :type nexthop_list: str
-        :param nexthop_list: The route item of next hop list. 
-        :rtype 
+        :param nexthop_list: The route item of next hop list.
+        :rtype
         :return Return result of Creating RouteEntry.
         """
-        params = {}
-
-        self.build_list_params(params, route_table_id, 'RouteTableId')
-        self.build_list_params(params, destination_cidrblock, 'DestinationCidrBlock')
-
-        if nexthop_type:
-            self.build_list_params(params, nexthop_type, 'NextHopType')
-
-        if nexthop_id:
-            self.build_list_params(params, nexthop_id, 'NextHopId')
-
-        if nexthop_list:
-            self.build_list_params(params, nexthop_list, 'NextHopList')
-
-        if self.get_status('CreateRouteEntry', params):
-            return self.wait_for_route_entry_status(route_table_id, destination_cidrblock, 'Available', 4, 60)
-
+        status = self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if status:
+            return self.wait_for_route_entry_status(kwargs["route_table_id"], kwargs["destination_cidrblock"], 'Available', 4, 60)
         return None
 
-    def get_route_entry_attribute(self, route_table_id, destination_cidrblock, nexthop_id=None):
+    def get_route_entry_attribute(self, **kwargs):
         """
         Querying route entry attribute
         :type route_table_id: str
@@ -187,14 +173,14 @@ class VPCConnection(ACSQueryConnection):
         :return: VRouters in json format
         """
 
-        route_entries = self.get_all_route_entries(route_table_id=route_table_id)
+        route_entries = self.get_all_route_entries(route_table_id=kwargs["route_table_id"])
         if route_entries:
             for entry in route_entries:
-                if destination_cidrblock == str(entry.destination_cidrblock):
+                if kwargs["destination_cidrblock"] == str(entry.destination_cidrblock):
                     return entry
         return None
 
-    def get_all_route_entries(self, router_id=None, router_type=None, route_table_id=None, pagenumber=1, pagesize=10):
+    def get_all_route_entries(self, **kwargs):
         """
         Querying all route entries in the specified router or route_tables_id
         :type router_id: str
@@ -211,8 +197,7 @@ class VPCConnection(ACSQueryConnection):
         :rtype list<>
         :return: List of route entry.
         """
-        route_tables = self.get_all_route_tables(router_id=router_id, router_type=router_type, route_table_id=route_table_id,
-                                                 pagenumber=pagenumber, pagesize=pagesize)
+        route_tables = self.describe_route_tables(**kwargs)
         route_entries = []
         if route_tables:
             for table in route_tables:
@@ -225,7 +210,7 @@ class VPCConnection(ACSQueryConnection):
 
         return route_entries
 
-    def delete_route_entry(self, route_table_id, destination_cidrblock=None, nexthop_id=None, nexthop_list=None):
+    def delete_route_entry(self, **kwargs):
         """
         Deletes the specified RouteEntry for the vpc
         :type route_table_id: str
@@ -239,21 +224,9 @@ class VPCConnection(ACSQueryConnection):
         :rtype bool
         :return Return result of deleting route entry.
         """
-        params = {}
+        return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
 
-        self.build_list_params(params, route_table_id, 'RouteTableId')
-        if destination_cidrblock:
-            self.build_list_params(params, destination_cidrblock, 'DestinationCidrBlock')
-
-        if nexthop_id:
-            self.build_list_params(params, nexthop_id, 'NextHopId')
-
-        if nexthop_list:
-            self.build_list_params(params, nexthop_list, 'NextHopList')
-
-        return self.get_status('DeleteRouteEntry', params)
-
-    def get_route_table_attribute(self, route_table_id):
+    def get_route_table_attribute(self, **kwargs):
         """
         Querying route table attribute
         :type route_table_id: str
@@ -261,9 +234,9 @@ class VPCConnection(ACSQueryConnection):
         :rtype dict
         :return: VRouters in json format
         """
-        return self.get_all_route_tables(route_table_id=route_table_id)
+        return self.describe_route_tables(route_table_id=kwargs["route_table_id"])
 
-    def get_all_route_tables(self, router_id=None, router_type=None, route_table_id=None, pagenumber=1, pagesize=10):
+    def describe_route_tables(self, **kwargs):
         """
         Querying vrouter
         :type router_id: str
@@ -276,28 +249,11 @@ class VPCConnection(ACSQueryConnection):
         :param pagenumber: Page number of the route entry list. The start value is 1. The default value is 1
         :type pagesize: integer
         :param pagesize: Sets the number of lines per page for queries per page. The maximum value is 50.
-        The default value is 10 
+        The default value is 10
         :rtype list<>
         :return: List of route entry.
         """
-        params = {}
-
-        if router_id:
-            self.build_list_params(params, router_id, 'RouterId')
-
-        if router_type:
-            self.build_list_params(params, router_type, 'RouterType')
-
-        if route_table_id:
-            self.build_list_params(params, route_table_id, 'RouteTableId')
-
-        if pagenumber:
-            self.build_list_params(params, pagenumber, 'PageNumber')
-
-        if pagesize:
-            self.build_list_params(params, pagesize, 'PageSize')
-
-        return self.get_list('DescribeRouteTables', params, ['RouteTables', RouteTable])
+        return self.get_list_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), ['RouteTables', RouteTable])
 
     def get_instance_info(self):
         """
@@ -428,13 +384,13 @@ class VPCConnection(ACSQueryConnection):
         results = []
 
         try:
-            if vrouter_id is not None :
+            if vrouter_id is not None:
                 self.build_list_params(params, vrouter_id, 'VRouterId')
 
-            if pagenumber is not None :
+            if pagenumber is not None:
                 self.build_list_params(params, pagenumber, 'PageNumber')
 
-            if pagesize is not None :
+            if pagesize is not None:
                 self.build_list_params(params, pagesize, 'PageSize')
 
             results = self.get_status('DescribeVRouters', params)
@@ -544,7 +500,7 @@ class VPCConnection(ACSQueryConnection):
         try:
             tm = 0
             while tm < timeout:
-                route_entry = self.get_route_entry_attribute(route_table_id, destination_cidrblock)
+                route_entry = self.get_route_entry_attribute(route_table_id=route_table_id, destination_cidrblock=destination_cidrblock)
                 if route_entry and str.lower(route_entry.status) == str.lower(status):
                     return route_entry
 
