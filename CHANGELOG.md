@@ -1,4 +1,10 @@
-## 1.13.0 (Unreleased)
+## 1.14.0 (Unreleased)
+
+## 1.13.0 (October 15, 2019)
+IMPROVEMENTS:
+
+- improve code to python3 ([#36](https://github.com/alibaba/footmark/pull/36))
+- improve some func's way to pass parameter ([#37](https://github.com/alibaba/footmark/pull/37))
 
 ## 1.12.0 (10 July, 2019)
 
