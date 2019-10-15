@@ -1,6 +1,6 @@
 ## 1.14.0 (Unreleased)
 
-## 1.13.0 (October 15, 2019)
+## 1.13.0 (October 16, 2019)
 IMPROVEMENTS:
 
 - improve code to python3 ([#36](https://github.com/alibaba/footmark/pull/36))
