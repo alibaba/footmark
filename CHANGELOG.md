@@ -1,4 +1,7 @@
 ## 1.14.0 (Unreleased)
+IMPROVEMENTS:
+
+- add modify_route_entry method([#39](https://github.com/alibaba/footmark/pull/39))
 
 ## 1.13.0 (October 16, 2019)
 IMPROVEMENTS:

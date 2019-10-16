@@ -160,6 +160,9 @@ class VPCConnection(ACSQueryConnection):
             return self.wait_for_route_entry_status(kwargs["route_table_id"], kwargs["destination_cidrblock"], 'Available', 4, 60)
         return None
 
+    def modify_route_entry(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
     def get_route_entry_attribute(self, **kwargs):
         """
         Querying route entry attribute
