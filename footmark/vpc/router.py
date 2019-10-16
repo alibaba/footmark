@@ -32,6 +32,8 @@ class RouteEntry(TaggedVPCObject):
         return 'RouteEntry:%s' % self.destination_cidrblock
 
     def __getattr__(self, name):
+        if name == 'id':
+            return self.route_entry_id
         if name == 'destination_cidrblock':
             return self.destination_cidr_block
         if name == 'next_hop_id':
@@ -48,3 +50,28 @@ class RouteEntry(TaggedVPCObject):
         if name.startswith('nexthop_'):
             setattr(self, 'next_hop' + name[7:], value)
         super(TaggedVPCObject, self).__setattr__(name, value)
+
+    def modify(self, name=None):
+        """
+        Update route_entry's name
+        """
+        params = {}
+        if name and self.route_entry_name != name:
+            params['route_entry_name'] = name
+        if params:
+            params['route_entry_id'] = self.route_entry_id
+            return self.connection.modify_route_entry(**params)
+        return False
+
+    def get(self):
+        return self.connection.get_route_entry_attribute(route_table_id=self.route_table_id, destination_cidrblock=self.destination_cidrblock)
+
+    def read(self):
+        route_entry = {}
+        for name, value in list(self.__dict__.items()):
+            if name in ["connection", "region_id", "region"]:
+                continue
+            route_entry[name] = value
+        return route_entry
+
+

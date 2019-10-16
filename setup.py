@@ -77,7 +77,7 @@ setup(
     install_requires=['aliyun-python-sdk-core>=2.13.10',
                       'aliyun-python-sdk-ecs>=4.11.0,<4.11.1',
                       'aliyun-python-sdk-slb>=2.0.21,<3.2.8',
-                      'aliyun-python-sdk-vpc>=3.0.2,<3.0.3',
+                      'aliyun-python-sdk-vpc>=3.0.4,<3.0.7',
                       'aliyun-python-sdk-rds>=2.1.0',
                       'aliyun-python-sdk-ess>=2.1.3',
                       'oss2>=2.3.3',
