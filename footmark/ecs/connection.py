@@ -286,7 +286,19 @@ class ECSConnection(ACSQueryConnection):
         :return: A list of  :class:`footmark.ecs.instance`
 
         """
-        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Instances', Instance])
+        pagenumber = 1
+        instances = []
+        page_size = kwargs['page_size'] if 'page_size' in kwargs else 10
+
+        while True:
+            kwargs['pagenumber'] = pagenumber
+            inst_list = self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Instances', Instance])
+            for inst in inst_list:
+                instances.append(inst)
+            if len(inst_list) < page_size:
+                break
+            pagenumber += 1
+        return instances
 
     def start_instances(self, **kwargs):
         """
@@ -304,7 +316,7 @@ class ECSConnection(ACSQueryConnection):
             if isinstance(instance_ids, six.string_types):
                 instance_ids = [instance_ids]
             for instance_id in instance_ids:
-                kwargs["instance_id"]= instance_id
+                kwargs["instance_id"] = instance_id
                 try:
                     self.get_status_new(self.build_request_params(kwargs))
                 except ServerException as e:
