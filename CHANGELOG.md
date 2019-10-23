@@ -2,6 +2,7 @@
 IMPROVEMENTS:
 
 - add modify_route_entry method([#39](https://github.com/alibaba/footmark/pull/39))
+- new module: foormark/sts  ([#41](https://github.com/alibaba/footmark/pull/41))
 
 ## 1.13.0 (October 16, 2019)
 IMPROVEMENTS:

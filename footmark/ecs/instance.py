@@ -166,7 +166,7 @@ class Instance(TaggedECSObject):
         :type security_group_id: str
         :param security_group_id: The Security Group ID.
         """
-        return self.connection.join_security_group(self.id, security_group_id)
+        return self.connection.join_security_group(instance_id=self.id, security_group_id=security_group_id)
 
     def leave_security_group(self, security_group_id):
         """
@@ -175,7 +175,7 @@ class Instance(TaggedECSObject):
         :type security_group_id: str
         :param security_group_id: The Security Group ID.
         """
-        return self.connection.leave_security_group(self.id, security_group_id)
+        return self.connection.leave_security_group(instance_id=self.id, security_group_id=security_group_id)
 
     def attach_key_pair(self, key_pair_name):
         """

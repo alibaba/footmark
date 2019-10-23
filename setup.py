@@ -80,6 +80,7 @@ setup(
                       'aliyun-python-sdk-vpc>=3.0.4,<3.0.7',
                       'aliyun-python-sdk-rds>=2.1.0',
                       'aliyun-python-sdk-ess>=2.1.3',
+                      'aliyun-python-sdk-sts>=2.1.7,<3.0.1',
                       'oss2>=2.3.3',
                       ]
 )
