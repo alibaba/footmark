@@ -20,7 +20,7 @@ class SLBConnection(ACSQueryConnection):
     ResponseError = SLBResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, sdk_version=None, security_token=None, user_agent=None):
+                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None):
         """
         Init method to create a new connection to SLB.
         """
@@ -35,7 +35,8 @@ class SLBConnection(ACSQueryConnection):
 
         super(SLBConnection, self).__init__(acs_access_key_id,
                                             acs_secret_access_key,
-                                            self.region, self.SLBSDK, security_token, user_agent=user_agent)
+                                            self.region, self.SLBSDK, security_token, user_agent=user_agent,
+                                            ecs_role_name=ecs_role_name)
 
     def format_slb_request_kwargs(self, **kwargs):
         for key, value in list(kwargs.items()):

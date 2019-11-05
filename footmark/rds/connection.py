@@ -23,7 +23,7 @@ class RDSConnection(ACSQueryConnection):
     ResponseError = RDSResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, sdk_version=None, security_token=None, user_agent=None):
+                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None):
         """
         Init method to create a new connection to RDS.
         """
@@ -38,7 +38,8 @@ class RDSConnection(ACSQueryConnection):
 
         super(RDSConnection, self).__init__(acs_access_key_id,
                                             acs_secret_access_key,
-                                            self.region, self.RDSSDK, security_token, user_agent=user_agent)
+                                            self.region, self.RDSSDK, security_token, user_agent=user_agent,
+                                            ecs_role_name=ecs_role_name)
 
     def create_rds_instance(self, db_engine, engine_version, db_instance_class, db_instance_storage,
                             instance_net_type, security_ip_list, pay_type, period=None,zone=None,
