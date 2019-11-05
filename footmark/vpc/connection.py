@@ -22,7 +22,7 @@ class VPCConnection(ACSQueryConnection):
     ResponseError = VPCResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, sdk_version=None, security_token=None, user_agent=None):
+                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None):
         """
         Init method to create a new connection to ECS.
         """
@@ -38,7 +38,8 @@ class VPCConnection(ACSQueryConnection):
         super(VPCConnection, self).__init__(acs_access_key_id=acs_access_key_id,
                                             acs_secret_access_key=acs_secret_access_key,
                                             region=self.region, product=self.VPCSDK,
-                                            security_token=security_token, user_agent=user_agent)
+                                            security_token=security_token, user_agent=user_agent,
+                                            ecs_role_name=ecs_role_name)
 
     def build_filter_params(self, params, filters):
         if not isinstance(filters, dict):

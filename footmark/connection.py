@@ -15,13 +15,13 @@ import uuid
 from footmark.resultset import ResultSet
 from aliyunsdkcore import client
 from aliyunsdkcore.acs_exception.exceptions import ServerException
-from aliyunsdkcore.auth.credentials import StsTokenCredential
+from aliyunsdkcore.auth.credentials import StsTokenCredential, EcsRamRoleCredential
 # from aliyunsdkecs.request.v20140526.DescribeNetworkInterfacesRequest import
 
 
 class ACSAuthConnection(object):
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None, security_token=None,
-                 region=None, provider='acs',  user_agent=None):
+                 region=None, provider='acs',  user_agent=None, ecs_role_name=None):
         """
         :keyword str acs_access_key_id: Your ACS Access Key ID (provided by
             Alicloud). If none is specified, the value in your
@@ -47,7 +47,8 @@ class ACSAuthConnection(object):
             self.provider = Provider(self._provider_type,
                                      acs_access_key_id,
                                      acs_secret_access_key,
-                                     security_token)
+                                     security_token,
+                                     ecs_role_name)
 
     def acs_access_key_id(self):
         return self.provider.access_key
@@ -69,18 +70,24 @@ class ACSAuthConnection(object):
     def region_id(self):
         return self.region
 
+    def ecs_role_name(self):
+        return self.provider.ecs_role_name
+
+    ecs_role_name = property(ecs_role_name)
+
 
 class ACSQueryConnection(ACSAuthConnection):
     ResponseError = FootmarkServerError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None, region=None,
-                 product=None, security_token=None, provider='acs',
+                 product=None, security_token=None, ecs_role_name=None, provider='acs',
                  user_agent='Alicloud-Footmark-v'+footmark.__version__):
 
         super(ACSQueryConnection, self).__init__(
             acs_access_key_id,
             acs_secret_access_key,
             security_token,
+            ecs_role_name=ecs_role_name,
             region=region,
             provider=provider,
             user_agent=user_agent)
@@ -276,11 +283,16 @@ class ACSQueryConnection(ACSAuthConnection):
         if not params:
             raise Exception("Request parameters should not be empty.")
 
-        conn = client.AcsClient(self.acs_access_key_id, self.acs_secret_access_key, self.region, user_agent=self.user_agent)
-
-        if self.security_token:
-            sts_token_credential = StsTokenCredential(self.access_key, self.secret_key, self.security_token)
-            conn = client.AcsClient(region_id=self.region, user_agent=self.user_agent, credential=sts_token_credential)
+        conn = None
+        if self.acs_access_key_id and self.acs_secret_access_key:
+            conn = client.AcsClient(self.acs_access_key_id, self.acs_secret_access_key, self.region, user_agent=self.user_agent)
+            if self.security_token:
+                sts_token_credential = StsTokenCredential(self.access_key, self.secret_key, self.security_token)
+                conn = client.AcsClient(region_id=self.region, user_agent=self.user_agent, credential=sts_token_credential)
+        else:
+            if self.ecs_role_name:
+                ecs_ram_role_credential = EcsRamRoleCredential(self.ecs_role_name)
+                conn = client.AcsClient(region_id=self.region, user_agent=self.user_agent, credential=ecs_ram_role_credential)
 
         if not conn:
             footmark.log.error('%s %s' % ('Null AcsClient ', conn))
