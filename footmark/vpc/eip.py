@@ -28,6 +28,11 @@ class Eip(TaggedVPCObject):
             self.ip_address = value
         if name == 'descritpion':
             name = 'description'
+        if name == 'tags' and value:
+            v = {}
+            for tag in value['tag']:
+                v[tag.get('key')] = tag.get('value', None)
+            value = v
         super(TaggedVPCObject, self).__setattr__(name, value)
 
     def get(self):
@@ -96,4 +101,31 @@ class Eip(TaggedVPCObject):
             eip[name] = value
         return eip
 
-   
+    def add_tags(self, tags):
+        """
+        Add tags
+        """
+        remain = {}
+        if tags:
+            for key, value in list(tags.items()):
+                if key in list(self.tags.keys()) and value == self.tags[key]:
+                    continue
+                remain[key] = value
+        if remain:
+            return self.connection.tag_resources(resource_ids=[self.id], resource_type="eip", tags=remain)
+        return False
+
+    def remove_tags(self, tags):
+        """
+        remove tags
+        """
+        remain = []
+        if tags:
+            for key, value in list(tags.items()):
+                if key not in list(self.tags.keys()):
+                    continue
+                remain.append(key)
+        if remain:
+            return self.connection.un_tag_resources(resource_ids=[self.id], resource_type="eip", tag_keys=remain)
+        return False
+

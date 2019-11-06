@@ -517,3 +517,10 @@ class VPCConnection(ACSQueryConnection):
             return None
         except Exception as e:
             raise Exception("Waiting For route entry Status {0} Error: {1}.".format(status, e))
+
+    def tag_resources(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def un_tag_resources(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
