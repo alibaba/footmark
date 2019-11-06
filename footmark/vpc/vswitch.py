@@ -31,7 +31,7 @@ class VSwitch(TaggedVPCObject):
         if name == 'tags' and value:
             v = {}
             for tag in value['tag']:
-                v[tag.get('TagKey')] = tag.get('TagValue', None)
+                v[tag.get('key')] = tag.get('value', None)
             value = v
         if name.startswith('subnet_'):
             setattr(self, 'vswitch' + name[6:], value)
@@ -70,3 +70,31 @@ class VSwitch(TaggedVPCObject):
 
             vswitch[name] = value
         return vswitch
+
+    def add_tags(self, tags):
+        """
+        Add tags
+        """
+        remain = {}
+        if tags:
+            for key, value in list(tags.items()):
+                if key in list(self.tags.keys()) and value == self.tags[key]:
+                    continue
+                remain[key] = value
+        if remain:
+            return self.connection.tag_resources(resource_ids=[self.id], resource_type="vswitch", tags=remain)
+        return False
+
+    def remove_tags(self, tags):
+        """
+        remove tags
+        """
+        remain = []
+        if tags:
+            for key, value in list(tags.items()):
+                if key not in list(self.tags.keys()):
+                    continue
+                remain.append(key)
+        if remain:
+            return self.connection.un_tag_resources(resource_ids=[self.id], resource_type="vswitch", tag_keys=remain)
+        return False
