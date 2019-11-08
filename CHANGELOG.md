@@ -1,7 +1,13 @@
-## 1.14.0 (Unreleased)
+## 1.15.0 (Unreleased)
+
+## 1.14.0 (12 November, 2019)
 IMPROVEMENTS:
 
 - add modify_route_entry method([#39](https://github.com/alibaba/footmark/pull/39))
+- support query instance more than 10 results ([#40](https://github.com/alibaba/footmark/pull/40))
+- new module footmark/sts ([#42](https://github.com/alibaba/ansible-provider/pull/42))
+- support ecs role name ([#43](https://github.com/alibaba/ansible-provider/pull/43))
+- add tags param for vpc module ([#44](https://github.com/alibaba/ansible-provider/pull/44))
 
 ## 1.13.0 (October 16, 2019)
 IMPROVEMENTS:
