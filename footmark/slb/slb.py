@@ -3,6 +3,7 @@ Represents an SLB
 """
 from footmark.slb.slbobject import TaggedSLBObject
 
+
 class VServerGroup(TaggedSLBObject):
     def __init__(self, connection=None, owner_id=None,
                  name=None, description=None, id=None):
@@ -60,6 +61,7 @@ class VServerGroup(TaggedSLBObject):
         describe vserver group attribute 
         '''
         return self.connection.describe_vserver_group_attribute(self.vserver_group_id)
+
 
 class LoadBalancerListener(TaggedSLBObject):
     def __init__(self, connection=None, owner_id=None,

@@ -38,7 +38,7 @@ class LoadBalancer(TaggedSLBObject):
         '''
         delete load balance 
         '''
-        return self.connection.describe_load_balancer_attribute(**{'load_balancer_id': self.load_balancer_id})
+        return self.connection.describe_load_balancers(**{'load_balancer_id': self.load_balancer_id})[0]
 
     def set_status(self, status):
         '''
@@ -103,3 +103,38 @@ class LoadBalancer(TaggedSLBObject):
 
             balancer[name] = value
         return balancer
+
+    def list_tags(self):
+        res = {}
+        tags = self.connection.list_tag_resources(resource_ids=[self.id], resource_type='instance')
+        for tag in tags:
+            res[tag.tag_key] = tag.tag_value
+        return res
+
+    def add_tags(self, tags):
+        """
+        Add tags
+        """
+        tmp = {}
+        if tags:
+            for key, value in list(tags.items()):
+                if key in list(self.list_tags().keys()) and value == self.list_tags()[key]:
+                    continue
+                tmp[key] = value
+        if tmp:
+            return self.connection.tag_resources(resource_ids=[self.id], tags=tmp, resource_type='instance')
+        return False
+
+    def remove_tags(self, tags):
+        """
+        remove tags
+        """
+        tmp = []
+        if tags:
+            for key, value in list(tags.items()):
+                if key not in list(self.list_tags().keys()):
+                    continue
+                tmp.append(key)
+        if tmp:
+            return self.connection.untag_resources(resource_ids=[self.id], tag_keys=tmp, resource_type='instance')
+        return False
