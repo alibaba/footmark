@@ -236,6 +236,24 @@ class ECSConnection(ACSQueryConnection):
 
         return self.describe_instances(instance_ids=instance_ids, page_size=100)
 
+    def run_instances(self, **kwargs):
+        kwargs = self.format_request_kwargs(**kwargs)
+        client_token = kwargs["client_token"]
+        if len(client_token) > 64:
+            client_token = client_token[0:64]
+        kwargs["client_token"] = client_token
+        instance_ids = self.get_object_new(self.build_request_params(kwargs), ResultSet).instance_id_sets['instance_id_set']
+        if instance_ids:
+            time.sleep(10)
+
+        transition = [].extend(instance_ids)
+        while transition:
+            for inst in self.describe_instances(instance_ids=transition, page_size=100):
+                if str(inst.status).lower() == 'running':
+                    transition.remove(inst.id)
+
+        return self.describe_instances(instance_ids=instance_ids, page_size=100)
+
     # Instance methods
     def get_all_instances(self, **kwargs):
     # def get_all_instances(self, zone_id=None, instance_ids=None, instance_name=None, instance_tags=None,
