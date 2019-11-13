@@ -1,5 +1,9 @@
 ## 1.15.0 (Unreleased)
 
+## 1.14.1 (13 November, 2019)
+IMPROVEMENTS:
+- modify setup file ([#48](https://github.com/alibaba/footmark/pull/48))
+
 ## 1.14.0 (12 November, 2019)
 IMPROVEMENTS:
 
