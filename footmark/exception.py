@@ -110,6 +110,15 @@ class SLBResponseError(FootmarkServerError):
         super(SLBResponseError, self).__init__(status, body)
 
 
+class DNSResponseError(FootmarkServerError):
+    """
+    Error in response from DNS.
+    """
+
+    def __init__(self, status, body=None):
+        super(DNSResponseError, self).__init__(status, body)
+
+
 class RDSResponseError(FootmarkServerError):
     """
     Error in response from RDS.
