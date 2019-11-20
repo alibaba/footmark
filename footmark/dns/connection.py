@@ -69,3 +69,38 @@ class DNSConnection(ACSQueryConnection):
 
     def describe_domain_logs(self, **kwargs):
         return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Domains', Dns])
+
+    def add_domain_group(self, **kwargs):
+        group_id = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet).group_id
+        kwargs['group_id'] = group_id
+        return self.describe_domain_group(**kwargs)
+
+    def update_domain_group(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def delete_domain_group(self, **kwargs):
+        retry = 5
+        while retry:
+            try:
+                return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+            except ServerException as e:
+                if str(e.error_code) == "Forbbiden" or str(e.error_code).find("Dependency"):
+                    time.sleep(5)
+                    retry -= 1
+                    continue
+                raise e
+        return False
+
+    def change_domain_group(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def describe_domain_groups(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['DomainGroups', Group])
+
+    def describe_domain_group(self, **kwargs):
+        groups = self.describe_domain_groups(**kwargs)
+        match = ''
+        for group in groups:
+            if group.group_name == kwargs['group_name'] and group.group_id == kwargs['group_id']:
+                match = group
+        return match
