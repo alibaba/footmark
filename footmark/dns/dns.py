@@ -17,6 +17,10 @@ class Dns(TaggedDNSObject):
             if hasattr(self, 'remark'):
                 return self.remark
             return ''
+        if name == 'group_id':
+            if hasattr(self, 'gid'):
+                return self.gid
+            return ''
         raise AttributeError
 
     def __setattr__(self, name, value):
@@ -24,6 +28,8 @@ class Dns(TaggedDNSObject):
             self.id = value
         if name == 'domain_name':
             self.name = value
+        if name == 'group_id':
+            self.gid = value
         super(TaggedDNSObject, self).__setattr__(name, value)
 
     def get(self):
@@ -46,4 +52,9 @@ class Dns(TaggedDNSObject):
     def modify_remark(self, remark=None):
         if remark and self.domain_remark != remark:
             return self.connection.update_domain_remark(domain_name=self.name, remark=remark)
+        return False
+
+    def change_domain_group(self, group_id=None, domain_name=None):
+        if self.group_id != group_id:
+            return self.connection.change_domain_group(group_id=group_id, domain_name=domain_name)
         return False

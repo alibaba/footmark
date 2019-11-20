@@ -37,15 +37,10 @@ class Group(TaggedDNSObject):
             group[name] = value
         return group
 
-    def delete(self):
-        return self.connection.delete_domain_group(group_id=self.id)
-
-    def change_domain_group(self, group_id=None, domain_name=None):
-        if group_id and domain_name:
-            return self.connection.change_domain_group(group_id=group_id, domain_name=domain_name)
-        return False
-
     def update_domain_group(self, group_id=None, group_name=None):
         if group_id and group_name and self.name != group_name:
             return self.connection.update_domain_group(group_id=group_id, group_name=group_name)
         return False
+
+    def delete(self):
+        return self.connection.delete_domain_group(group_id=self.id)
