@@ -105,7 +105,6 @@ class ACSQueryConnection(ACSAuthConnection):
     def build_request_params(self, filters):
         action = filters['Action']
         params = {'Action': action}
-
         # get all of the specified request's method names dict, like {'InstanceId':'set_InstanceId', 'Name':'set_Name'}
         methods = {}
         request = self.import_request(action)
@@ -309,6 +308,8 @@ class ACSQueryConnection(ACSAuthConnection):
         while timeout > 0:
             request = self.import_request(params.get('Action', params.get('action')))
             request.set_accept_format('json')
+            request.set_read_timeout(30)
+            request.set_connect_timeout(30)
             try:
                 for k, v in list(params.items()):
                     if hasattr(request, k):

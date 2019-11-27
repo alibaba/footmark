@@ -11,7 +11,7 @@ import json
 
 from footmark.connection import ACSQueryConnection
 from footmark.rds.regioninfo import RegionInfo
-from footmark.rds.rds import Account, DbInstance
+from footmark.rds.rds import Account, DbInstance, Database, BackUp
 from footmark.resultset import ResultSet
 from footmark.exception import RDSResponseError
 
@@ -41,7 +41,7 @@ class RDSConnection(ACSQueryConnection):
                                             self.region, self.RDSSDK, security_token, user_agent=user_agent,
                                             ecs_role_name=ecs_role_name)
 
-    def create_rds_instance(self, db_engine, engine_version, db_instance_class, db_instance_storage,
+    def _create_rds_instance(self, db_engine, engine_version, db_instance_class, db_instance_storage,
                             instance_net_type, security_ip_list, pay_type, period=None,zone=None,
                             instance_description=None, used_time=None, instance_network_type=None, connection_mode=None,
                             vpc_id=None, vswitch_id=None, private_ip_address=None, allocate_public_ip=False,
@@ -167,10 +167,10 @@ class RDSConnection(ACSQueryConnection):
             ]
             results = results + self.rds_error_handler(ex, custom_msg)
 
-        else:          
+        else:
             time.sleep(240)
             # Start newly created Instance
-            # wait until instance status becomes running         
+            # wait until instance status becomes running
             if allocate_public_ip and self.check_instance_status(results_instance['DBInstanceId']):
                 if connection_string_prefix and public_port:
                     if instance_net_type == "Intranet":
@@ -182,39 +182,39 @@ class RDSConnection(ACSQueryConnection):
                             self.modify_instance_public_connection(results_instance['DBInstanceId'],
                                                                    results_instance['ConnectionString'],
                                                                    connection_string_prefix, public_port)
-            
+
                     if 'error' in (''.join(str(result_conn_str))).lower():
                         results.append(result_conn_str)
-                           
+
             if self.check_instance_status(results_instance['DBInstanceId']):
-                if db_name or character_set_name: 
+                if db_name or character_set_name:
                     changed_create_db, result_create_db = self.create_database(results_instance['DBInstanceId'],
                                                                                db_name, db_description,
                                                                                character_set_name)
-            
+
                     if 'error' in (''.join(str(result_create_db))).lower():
-                        results.append(result_create_db)                      
-              
+                        results.append(result_create_db)
+
             if maint_window and self.check_instance_status(results_instance['DBInstanceId']):
                 changed_maint_window, result_maint_window = \
                     self.modify_db_instance_maint_time(results_instance['DBInstanceId']
                                                             , maint_window)
                 if 'error' in (''.join(str(result_maint_window))).lower():
-                    results.append(result_maint_window) 
-            
-            if preferred_backup_time and preferred_backup_period:               
+                    results.append(result_maint_window)
+
+            if preferred_backup_time and preferred_backup_period:
                 if self.check_instance_status(results_instance['DBInstanceId']):
                     changed_backup_policy, result_backup_policy = \
                         self.modify_backup_policy(results_instance['DBInstanceId'],
                                                   preferred_backup_time, preferred_backup_period,
                                                   backup_retention_period)
                     if 'error' in (''.join(str(result_backup_policy))).lower():
-                        results.append(result_backup_policy) 
-               
+                        results.append(result_backup_policy)
+
             if db_tags:
                 changed_tags, result_db_tags = self.bind_tags(results_instance['DBInstanceId'], db_tags)
                 if 'error' in (''.join(str(result_db_tags))).lower():
-                    results.append(result_db_tags)                                    
+                    results.append(result_db_tags)
 
             if str(wait).lower() in ['yes', 'true'] and wait_timeout:
                 time.sleep(wait_timeout)
@@ -313,7 +313,7 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def modify_rds_instance(self, instance_id, current_connection_string, connection_string_prefix, port,
+    def _modify_rds_instance(self, instance_id, current_connection_string, connection_string_prefix, port,
                             connection_mode, db_instance_class, db_instance_storage, pay_type, instance_description,
                             security_ip_list, instance_network_type, vpc_id, vswitch_id, maint_window,
                             preferred_backup_time, preferred_backup_period, backup_retention_period):
@@ -361,7 +361,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        perform_flag = True               
+        perform_flag = True
         try:
             instance_status = "Stopped"
             while instance_status == "Stopped":
@@ -377,46 +377,46 @@ class RDSConnection(ACSQueryConnection):
                             break
 
                 except Exception as ex:
-                    instance_status = "Stopped" 
-            if perform_flag:    
+                    instance_status = "Stopped"
+            if perform_flag:
                 if self.check_instance_status(instance_id):
                     changed_inst_type, result_inst_type = self.change_rds_instance_type(instance_id, db_instance_class,
                                                                                         db_instance_storage, pay_type)
                     if result_inst_type:
                         results.append(result_inst_type)
-                    
+
                     if 'error' not in (''.join(str(result_inst_type))).lower():
                         changed = True
-                    time.sleep(60)                                                                   
+                    time.sleep(60)
 
-                if self.check_instance_status(instance_id):                                  
+                if self.check_instance_status(instance_id):
                     changed_security_ip, result_security_ip =\
                         self.modify_rds_instance_security_ip_list(instance_id, security_ip_list)
 
                     if 'error' in (''.join(str(result_security_ip))).lower():
                         results.append(result_security_ip)
                     else:
-                        changed = True                      
-                                 
+                        changed = True
+
                 if preferred_backup_time and preferred_backup_period:
-                    if self.check_instance_status(instance_id):        
+                    if self.check_instance_status(instance_id):
                         changed_backup_policy, result_backup_policy = \
                             self.modify_backup_policy(instance_id, preferred_backup_time, preferred_backup_period,
                                                       backup_retention_period)
                         if 'error' in (''.join(str(result_backup_policy))).lower():
                             results.append(result_backup_policy)
                         else:
-                            changed = True       
-                                             
+                            changed = True
+
                 if maint_window:
-                    if self.check_instance_status(instance_id):     
+                    if self.check_instance_status(instance_id):
                         changed_maint_time, result_maint_time = self.modify_db_instance_maint_time(instance_id,
                                                                                                    maint_window)
                         if 'error' in (''.join(str(result_maint_time))).lower():
                             results.append(result_maint_time)
                         else:
-                            changed = True  
-                                  
+                            changed = True
+
                 if connection_mode:
                     if self.check_instance_status(instance_id):
                         changed_conn_mode, result_conn_mode = self.modify_rds_instance_access_mode(instance_id,
@@ -424,7 +424,7 @@ class RDSConnection(ACSQueryConnection):
                     if 'error' in (''.join(str(result_conn_mode))).lower():
                         results.append(result_conn_mode)
                     else:
-                        changed = True  
+                        changed = True
                     time.sleep(5)
 
                 if instance_description:
@@ -434,28 +434,28 @@ class RDSConnection(ACSQueryConnection):
                         if 'error' in (''.join(str(result_inst_desc))).lower():
                             results.append(result_inst_desc)
                         else:
-                            changed = True           
-                              
-                if current_connection_string:    
-                    if self.check_instance_status(instance_id) and connection_string_prefix and port:                          
+                            changed = True
+
+                if current_connection_string:
+                    if self.check_instance_status(instance_id) and connection_string_prefix and port:
                         changed_public_conn, result_public_conn = \
                             self.modify_instance_public_connection(instance_id, current_connection_string,
                                                                    connection_string_prefix, port)
-            
+
                         if 'error' in (''.join(str(result_public_conn))).lower():
-                            results.append(result_public_conn)                          
+                            results.append(result_public_conn)
                         else:
-                            changed = True                       
-                        time.sleep(5)    
-                                       
-                if instance_network_type and self.check_instance_status(instance_id):   
+                            changed = True
+                        time.sleep(5)
+
+                if instance_network_type and self.check_instance_status(instance_id):
                     changed_net_type, result_net_type = self.modify_rds_instance_network_type(instance_id,
                                                                                               instance_network_type,
                                                                                               vpc_id, vswitch_id)
                     if 'error' in (''.join(str(result_net_type))).lower():
-                        results.append(result_net_type)                        
+                        results.append(result_net_type)
                     else:
-                        changed = True                      
+                        changed = True
 
         except Exception as ex:
             error_code = str(ex.error_code)
@@ -825,7 +825,7 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def modify_backup_policy(self, instance_id, preferred_backup_time, preferred_backup_period,
+    def _modify_backup_policy(self, instance_id, preferred_backup_time, preferred_backup_period,
                              backup_retention_period, backup_log=None):
         """
         Modify Backup Policy
@@ -848,7 +848,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if preferred_backup_time:
@@ -860,7 +860,7 @@ class RDSConnection(ACSQueryConnection):
         if backup_log:
             self.build_list_params(params, backup_log, 'BackupLog')
         try:
-            results = self.get_status('ModifyBackupPolicy', params)            
+            results = self.get_status('ModifyBackupPolicy', params)
             changed = True
         except Exception as ex:
             if (ex.args is None) or (ex.args == "need more than 2 values to unpack") \
@@ -914,7 +914,7 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def create_database(self, instance_id, db_name, db_description, character_set_name):
+    def _create_database(self, instance_id, db_name, db_description, character_set_name):
         """
         Creates a new database in an instance
         :type instance_id: str
@@ -956,7 +956,7 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def delete_database(self, instance_id, db_name):
+    def _delete_database(self, instance_id, db_name):
         """
         Delete database
         :type instance_id: str
@@ -968,7 +968,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if db_name:
@@ -1082,8 +1082,8 @@ class RDSConnection(ACSQueryConnection):
             results.append({"Error Code": error_code, "Error Message": error_msg})
 
         return changed, results
-    
-    def create_account(self, db_instance_id, account_name, account_password, description=None, account_type=None):
+
+    def _create_account(self, db_instance_id, account_name, account_password, description=None, account_type=None):
         """
         Create account for database
         :type db_instance_id: str
@@ -1105,7 +1105,7 @@ class RDSConnection(ACSQueryConnection):
         """
         params = {}
         account_obj = None
-        
+
         self.build_list_params(params, db_instance_id, 'DBInstanceId')
         self.build_list_params(params, account_name, 'AccountName')
         self.build_list_params(params, account_password, 'AccountPassword')
@@ -1117,8 +1117,8 @@ class RDSConnection(ACSQueryConnection):
         if self.wait_for_account_status(db_instance_id, account_name):
             account_obj = self.list_account(db_instance_id, account_name)[0]
         return account_obj
-    
-    def wait_for_account_status(self, db_instance_id, account_name, dely_time = 3, timeout = 60, state = "Available"):
+
+    def _wait_for_account_status(self, db_instance_id, account_name, dely_time = 3, timeout = 60, state = "Available"):
         """
         Wait for account status
         :type dely_time: int
@@ -1143,10 +1143,10 @@ class RDSConnection(ACSQueryConnection):
                 result = True
                 break
             runing_time = runing_time + dely_time
-            time.sleep(dely_time)    
+            time.sleep(dely_time)
         return result
     
-    def reset_account_password(self, db_instance_id, account_name, account_password):
+    def _reset_account_password(self, db_instance_id, account_name, account_password):
         """
         Reset instance password
         :type db_instance_id: str
@@ -1163,10 +1163,10 @@ class RDSConnection(ACSQueryConnection):
         self.build_list_params(params, db_instance_id, 'DBInstanceId')
         self.build_list_params(params, account_name, 'AccountName')
         self.build_list_params(params, account_password, 'AccountPassword')
-        
+
         return self.get_status('ResetAccountPassword', params)
 
-    def delete_account(self, db_instance_id, account_name):
+    def _delete_account(self, db_instance_id, account_name):
         """
         Delete Account
 
@@ -1177,12 +1177,12 @@ class RDSConnection(ACSQueryConnection):
         :return: Bool
         """
         params = {}
-        
+
         self.build_list_params(params, db_instance_id, 'DBInstanceId')
         self.build_list_params(params, account_name, 'AccountName')
         return self.get_status('DeleteAccount', params)
 
-    def modify_account_description(self, db_instance_id, account_name, description):
+    def _modify_account_description(self, db_instance_id, account_name, description):
         """
         modify Account
 
@@ -1195,13 +1195,13 @@ class RDSConnection(ACSQueryConnection):
         :return: Bool
         """
         params = {}
-        
+
         self.build_list_params(params, db_instance_id, 'DBInstanceId')
         self.build_list_params(params, account_name, 'AccountName')
         self.build_list_params(params, description, 'AccountDescription')
         return self.get_status('ModifyAccountDescription', params)
 
-    def grant_account_privilege(self, db_instance_id, account_name, db_name, account_privilege):
+    def _grant_account_privilege(self, db_instance_id, account_name, db_name, account_privilege):
         """
         Grant Account Permissions
 
@@ -1216,14 +1216,14 @@ class RDSConnection(ACSQueryConnection):
         :return: Bool
         """
         params = {}
-        
+
         self.build_list_params(params, db_instance_id, 'DBInstanceId')
         self.build_list_params(params, account_name, 'AccountName')
         self.build_list_params(params, db_name, 'DBName')
         self.build_list_params(params, account_privilege, 'AccountPrivilege')
         return self.get_status('GrantAccountPrivilege', params)
 
-    def revoke_account_privilege(self, db_instance_id, account_name, db_name):
+    def _revoke_account_privilege(self, db_instance_id, account_name, db_name):
         """
         Revoke Account Permissions
 
@@ -1238,7 +1238,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         self.build_list_params(params, db_instance_id, 'DBInstanceId')
         self.build_list_params(params, account_name, 'AccountName')
         self.build_list_params(params, db_name, 'DBName')
@@ -1306,7 +1306,7 @@ class RDSConnection(ACSQueryConnection):
 
         return changed, results
 
-    def reset_account(self, db_instance_id, account_name, account_password):
+    def _reset_account(self, db_instance_id, account_name, account_password):
         """
         Reset account
         :type db_instance_id: str
@@ -1376,7 +1376,6 @@ class RDSConnection(ACSQueryConnection):
                            " and message: " + error_msg)
         return results
 
-
     def get_rds_instances(self, instance_id=None, engine=None, dbinstance_type=None, instance_network_type=None,
                           connection_mode=None, tags=None):
         """
@@ -1415,5 +1414,197 @@ class RDSConnection(ACSQueryConnection):
             self.build_list_params(params, db_tags_json, 'Tags')
         return self.get_list('DescribeDBInstances', params, ['Items', DbInstance])
 
+    def format_rds_request_kwargs(self, **kwargs):
+        for key, value in list(kwargs.items()):
+            if key in ['db_instance_class', 'db_instance_id', 'db_instance_storage', 'db_instance_net_type', 'db_instance_description', 'db_name', 'db_names', 'db_description', 'target_db_instance_id']:
+                kwargs[key.replace("db", "d_b")] = value
+                del kwargs[key]
+            if key == 'vpc_id':
+                kwargs[key.replace('vpc', 'v_p_c')] = value
+                del kwargs[key]
+            if key == 'vswitch_id':
+                kwargs[key.replace('vswitch', 'v_switch')] = value
+                del kwargs[key]
+            if key == 'security_ip_list':
+                kwargs[key.replace('ip', 'i_p')] = value
+                del kwargs[key]
+            if key == 'Action':
+                if str(value).find("DbInstance") or str(value).find("DbDescription"):
+                    kwargs['Action'] = str(value).replace("Db", "DB")
+        return kwargs
 
+    def release_instance_public_connection(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            self.wait_for_rds_status(kwargs['db_instance_id'], 'Running', 4, 720)
+        return res
 
+    def delete_db_instance(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def restart_db_instance(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            self.wait_for_rds_status(kwargs['db_instance_id'], 'Running', 4, 720)
+        return res
+
+    def wait_for_rds_status(self, rds_id, status, delay, timeout):
+        try:
+            while True:
+                rds = self.describe_db_instances(DBInstance_id=rds_id)[0]
+                if rds and str(rds.status) in [status, str(status).lower()]:
+                    return True
+                timeout -= delay
+                if timeout <= 0:
+                    raise Exception("Timeout Error: Waiting for RDS status is %s, time-consuming %d seconds." % (status, timeout))
+                time.sleep(delay)
+        except Exception as e:
+            raise e
+
+    def create_db_instance(self, **kwargs):
+        rds_id = self.get_object_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ResultSet).dbinstance_id
+        self.wait_for_rds_status(rds_id, 'Running', 4, 720)
+        return self.describe_db_instance_attribute(DBInstance_id=rds_id)
+
+    def allocate_instance_public_connection(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            self.wait_for_rds_status(kwargs['db_instance_id'], 'Running', 4, 720)
+        return res
+
+    def modify_db_instance_connection_string(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            self.wait_for_rds_status(kwargs['db_instance_id'], 'Running', 4, 720)
+        return res
+
+    def modify_db_instance_network_type(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            self.wait_for_rds_status(kwargs['db_instance_id'], 'Running', 4, 720)
+        return res
+
+    def describe_db_instances(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Items', DbInstance])
+
+    def describe_db_instance_net_info(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['DBInstanceNetInfos', DbInstance])
+
+    def create_read_only_db_instance(self, **kwargs):
+        read_only_obj = self.get_object_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), DbInstance)
+        self.wait_for_rds_status(read_only_obj.id, 'Running', 10, 2000)
+        return read_only_obj
+
+    def modify_db_instance_description(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            self.wait_for_rds_status(kwargs['db_instance_id'], 'Running', 4, 720)
+        return res
+
+    def modify_db_instance_spec(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            self.wait_for_rds_status(kwargs['db_instance_id'], 'Running', 4, 2000)
+        return res
+
+    def describe_db_instance_attribute(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Items', DbInstance])[0]
+
+    def wait_for_db_status(self, rds_id, db_name, status, delay, timeout):
+        try:
+            while True:
+                rds = self.describe_databases(DBInstance_id=rds_id, DBName=db_name)[0]
+                if rds and str(rds.status) in [status, str(status).lower()]:
+                    return rds
+                timeout -= delay
+                if timeout <= 0:
+                    raise Exception("Timeout Error: Waiting for database status is %s, time-consuming %d seconds." % (status, timeout))
+                time.sleep(delay)
+        except Exception as e:
+            raise e
+
+    def describe_databases(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Databases', Database])
+
+    def create_database(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            res = self.wait_for_db_status(kwargs['db_instance_id'], kwargs['db_name'], 'Running', 4, 240)
+        return res
+
+    def delete_database(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def modify_db_description(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def copy_database_between_instances(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def create_account(self, **kwargs):
+        if self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs)))):
+            return self.describe_accounts(DBInstanceId=kwargs['db_instance_id'], AccountName=kwargs['account_name'])[0]
+        return None
+
+    def delete_account(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def describe_accounts(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Accounts', Account])
+
+    def grant_account_privilege(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def revoke_account_privilege(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def modify_account_description(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def reset_account_password(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def wait_for_backup_status(self, db_instance_id, backup_job_id, status, delay, timeout):
+        try:
+            while True:
+                back_task = self.describe_backup_tasks(DbInstanceId=db_instance_id, BackupJobId=backup_job_id)[0]
+                if back_task and str(back_task.status) in [status, str(status).lower()]:
+                    return back_task.id
+                timeout -= delay
+                if timeout <= 0:
+                    raise Exception("Timeout Error: Waiting for backup status is %s, time-consuming %d seconds." % (status, timeout))
+                time.sleep(delay)
+        except Exception as e:
+            raise e
+
+    def create_backup(self, **kwargs):
+        backup_job_id = self.get_object_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ResultSet).backup_job_id
+        backup_id = self.wait_for_backup_status(kwargs['db_instance_id'], backup_job_id, 'finished', 4, 960)
+        return self.describe_backups(DbInstanceId=kwargs['db_instance_id'], BackupId=backup_id)
+
+    def delete_backup(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+
+    def modify_backup_policy(self, **kwargs):
+        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        if res:
+            return self.describe_backup_policy(**kwargs)
+        return None
+
+    def describe_backups(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Items', BackUp])
+
+    def describe_backup_tasks(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Items', BackUp])
+
+    def describe_backup_policy(self, **kwargs):
+        return self.get_object_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), BackUp)
+
+    def tag_resources(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def untag_resources(self, **kwargs):
+        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def list_tag_resources(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['TagResources', BackUp])
