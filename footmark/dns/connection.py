@@ -101,6 +101,6 @@ class DNSConnection(ACSQueryConnection):
         groups = self.describe_domain_groups(**kwargs)
         match = ''
         for group in groups:
-            if group.group_name == kwargs['group_name'] and group.group_id == kwargs['group_id']:
+            if group.group_name == kwargs['group_name']:
                 match = group
         return match

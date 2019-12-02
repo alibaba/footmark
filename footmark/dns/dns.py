@@ -54,7 +54,7 @@ class Dns(TaggedDNSObject):
             return self.connection.update_domain_remark(domain_name=self.name, remark=remark)
         return False
 
-    def change_domain_group(self, group_id=None, domain_name=None):
+    def change_domain_group(self, group_name=None, domain_name=None):
+        group_id = self.connection.describe_domain_group(group_name=group_name).id
         if self.group_id != group_id:
             return self.connection.change_domain_group(group_id=group_id, domain_name=domain_name)
-        return False
