@@ -1,4 +1,8 @@
-## 1.15.0 (Unreleased)
+## 1.16.0 (Unreleased)
+
+## 1.15.0 (3 December, 2019)
+- Add new module dns ([#50](https://github.com/alibaba/footmark/pull/50))
+- improve(ecs): Add run_instances methed ([#46](https://github.com/alibaba/footmark/pull/46))
 
 ## 1.14.1 (13 November, 2019)
 IMPROVEMENTS:
