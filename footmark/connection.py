@@ -2,6 +2,7 @@
 """
 Handles basic connections to ACS
 """
+import os
 import time
 import footmark
 import importlib
@@ -21,7 +22,7 @@ from aliyunsdkcore.auth.credentials import StsTokenCredential, EcsRamRoleCredent
 
 class ACSAuthConnection(object):
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None, security_token=None,
-                 region=None, provider='acs',  user_agent=None, ecs_role_name=None):
+                 region=None, provider='acs',  user_agent=None, ecs_role_name=None, profile=None, shared_credentials_file=None):
         """
         :keyword str acs_access_key_id: Your ACS Access Key ID (provided by
             Alicloud). If none is specified, the value in your
@@ -48,7 +49,9 @@ class ACSAuthConnection(object):
                                      acs_access_key_id,
                                      acs_secret_access_key,
                                      security_token,
-                                     ecs_role_name)
+                                     ecs_role_name,
+                                     profile,
+                                     shared_credentials_file)
 
     def acs_access_key_id(self):
         return self.provider.access_key
@@ -75,13 +78,23 @@ class ACSAuthConnection(object):
 
     ecs_role_name = property(ecs_role_name)
 
+    def profile(self):
+        return self.provider.profile
+
+    profile = property(profile)
+
+    def shared_credentials_file(self):
+        return self.provider.shared_credentials_file
+
+    shared_credentials_file = property(shared_credentials_file)
+
 
 class ACSQueryConnection(ACSAuthConnection):
     ResponseError = FootmarkServerError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None, region=None,
                  product=None, security_token=None, ecs_role_name=None, provider='acs',
-                 user_agent='Alicloud-Footmark-v'+footmark.__version__):
+                 user_agent='Alicloud-Footmark-v'+footmark.__version__, profile=None, shared_credentials_file=None):
 
         super(ACSQueryConnection, self).__init__(
             acs_access_key_id,
@@ -90,7 +103,10 @@ class ACSQueryConnection(ACSAuthConnection):
             ecs_role_name=ecs_role_name,
             region=region,
             provider=provider,
-            user_agent=user_agent)
+            user_agent=user_agent,
+            profile=profile,
+            shared_credentials_file=shared_credentials_file
+            )
 
         self.product = product
         self.user_agent = user_agent
@@ -289,10 +305,9 @@ class ACSQueryConnection(ACSAuthConnection):
             if self.security_token:
                 sts_token_credential = StsTokenCredential(self.access_key, self.secret_key, self.security_token)
                 conn = client.AcsClient(region_id=self.region, user_agent=self.user_agent, credential=sts_token_credential)
-        else:
-            if self.ecs_role_name:
-                ecs_ram_role_credential = EcsRamRoleCredential(self.ecs_role_name)
-                conn = client.AcsClient(region_id=self.region, user_agent=self.user_agent, credential=ecs_ram_role_credential)
+        elif self.ecs_role_name:
+            ecs_ram_role_credential = EcsRamRoleCredential(self.ecs_role_name)
+            conn = client.AcsClient(region_id=self.region, user_agent=self.user_agent, credential=ecs_ram_role_credential)
 
         if not conn:
             footmark.log.error('%s %s' % ('Null AcsClient ', conn))
