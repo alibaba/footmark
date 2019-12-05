@@ -18,8 +18,7 @@ class DNSConnection(ACSQueryConnection):
     ResponseError = DNSResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None,
-                 profile=None, shared_credentials_file=None):
+                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None):
         """
         Init method to create a new connection to DNS.
         """
@@ -37,9 +36,7 @@ class DNSConnection(ACSQueryConnection):
                                             security_token=security_token,
                                             region=self.region, product=self.STSSDK,
                                             user_agent=user_agent,
-                                            ecs_role_name=ecs_role_name,
-                                            profile=profile,
-                                            shared_credentials_file=shared_credentials_file)
+                                            ecs_role_name=ecs_role_name)
 
     def add_domain(self, **kwargs):
         domain_name = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet).domain_name
