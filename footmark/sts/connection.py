@@ -42,5 +42,7 @@ class STSConnection(ACSQueryConnection):
         return kwargs
 
     def assume_role(self, **kwargs):
-        assume_role = self.get_object_new(self.build_request_params(self.format_sts_request_kwargs(**self.format_request_kwargs(**kwargs))), Sts)
-        return assume_role
+        return self.get_object_new(self.build_request_params(self.format_sts_request_kwargs(**self.format_request_kwargs(**kwargs))), Sts)
+
+    def get_caller_identity(self, **kwargs):
+        return self.get_object_new(self.build_request_params(self.format_sts_request_kwargs(**self.format_request_kwargs(**kwargs))), Sts)

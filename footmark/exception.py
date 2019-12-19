@@ -137,6 +137,15 @@ class STSResponseError(FootmarkServerError):
         super(STSResponseError, self).__init__(status, body)
 
 
+class RAMResponseError(FootmarkServerError):
+    """
+    Error in response from RAM.
+    """
+
+    def __init__(self, status, body=None):
+        super(RAMResponseError, self).__init__(status, body)
+
+
 class OSSResponseError(FootmarkServerError):
     """
     Error in response from OSS.

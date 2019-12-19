@@ -18,7 +18,6 @@ class Sts(TaggedSTSObject):
             return self.access_key_secret
         if name == 'SecurityToken':
             return self.security_token
-        raise AttributeError
 
     def __setattr__(self, name, value):
         super(TaggedSTSObject, self).__setattr__(name, value)
@@ -26,10 +25,11 @@ class Sts(TaggedSTSObject):
     def read(self):
         ram = {}
         for name, value in list(self.__dict__.items()):
-            if name in ["connection", "region_id", "region"]:
+            if name in ["connection", "region_id", "region", "request_id"]:
                 continue
             if name in ['credentials', 'assumed_role_user']:
                 for key, value in value.items():
                     ram[key] = value
+            ram[name] = value
         return ram
 
