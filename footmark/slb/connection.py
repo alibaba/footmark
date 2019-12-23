@@ -62,11 +62,7 @@ class SLBConnection(ACSQueryConnection):
         :param load_balancer_name: name of the load balancer
         :return: load balance in dictionary format if found else None
         """
-        # balancers = []
         resp = self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['LoadBalancers', LoadBalancer])
-        # if len(resp) > 0:
-        #     for b in resp:
-        #         balancers.append(self.describe_load_balancer_attribute(**{'load_balancer_id': b.load_balancer_id}))
         return resp
 
     def describe_load_balancer_attribute(self, **kwargs):
