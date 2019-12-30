@@ -239,18 +239,24 @@ class Account(TaggedRDSObject):
             self.type = value
         super(TaggedRDSObject, self).__setattr__(name, value)
 
-    def grant_privilege(self, db_name, account_privilege):
+    def grant_privilege(self, db_names, account_privilege):
         '''
         grant privilege
         '''
-        return self.connection.grant_account_privilege(db_instance_id=self.id, account_name=self.name, db_name=db_name, account_privilege=account_privilege)
-    
-    def revoke_privilege(self, db_instance_id, db_name):
+        flag = False
+        for db_name in db_names:
+            flag = self.connection.grant_account_privilege(db_instance_id=self.id, account_name=self.name, db_name=db_name, account_privilege=account_privilege)
+        return flag
+
+    def revoke_privilege(self, db_names):
         '''
         revoke privilege
         '''
-        return self.connection.revoke_account_privilege(db_instance_id=self.id, account_name=self.name, db_name=db_name)
-    
+        flag = False
+        for db_name in db_names:
+            flag = self.connection.revoke_account_privilege(db_instance_id=self.id, account_name=self.name, db_name=db_name)
+        return flag
+
     def modify_description(self, description=None):
         '''
         modify description
