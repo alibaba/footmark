@@ -1553,10 +1553,16 @@ class RDSConnection(ACSQueryConnection):
         return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Accounts', Account])
 
     def grant_account_privilege(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        try:
+            return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        except Exception as e:
+            raise e
 
     def revoke_account_privilege(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        try:
+            return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        except Exception as e:
+            raise e
 
     def modify_account_description(self, **kwargs):
         return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
@@ -1586,10 +1592,15 @@ class RDSConnection(ACSQueryConnection):
         return self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
 
     def modify_backup_policy(self, **kwargs):
-        res = self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))))
-        if res:
-            return self.describe_backup_policy(**kwargs)
-        return None
+        policy = self.describe_backup_policy(**kwargs).read()
+        modify = False
+        for key, value in kwargs.items():
+            if value and policy.get(key, None) and str(value) != str(policy.get(key)):
+                modify = True
+        if modify:
+            if self.get_status_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs)))):
+                return True, self.describe_backup_policy(**kwargs)
+        return False, self.describe_backup_policy(**kwargs)
 
     def describe_backups(self, **kwargs):
         return self.get_list_new(self.build_request_params(self.format_rds_request_kwargs(**self.format_request_kwargs(**kwargs))), ['Items', BackUp])
