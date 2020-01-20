@@ -1268,6 +1268,10 @@ class ECSConnection(ACSQueryConnection):
         all_regions = self.get_list('DescribeRegions', None, ['Regions', RegionInfo])
         return all_regions
 
+    def describe_regions(self):
+        all_regions = self.get_list_new(self.build_request_params(self.format_request_kwargs()), ['Regions', RegionInfo])
+        return all_regions
+
     def create_network_interface(self, **kwargs):
         res = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet)
         if not self.wait_for_network_interface(res.network_interface_id, "Available"):
