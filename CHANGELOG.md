@@ -1,16 +1,19 @@
 ## 1.17.0 (Unreleased)
 
-## 1.16.0 (21 January, 2020)
+## 1.16.0 (31 January, 2020)
+
 - fix inventory bug ([#63](https://github.com/alibaba/footmark/pull/63))
 - improve(rds): modify account and backpolicy ([#60](https://github.com/alibaba/footmark/pull/60))
 - improve(slb): Add tags ([#57](https://github.com/alibaba/footmark/pull/57))
 - improve (rds): modify rds instance and database ([#53](https://github.com/alibaba/footmark/pull/53))
 
 ## 1.15.0 (3 December, 2019)
+
 - Add new module dns ([#50](https://github.com/alibaba/footmark/pull/50))
 - improve(ecs): Add run_instances methed ([#46](https://github.com/alibaba/footmark/pull/46))
 
 ## 1.14.1 (13 November, 2019)
+
 IMPROVEMENTS:
 - modify setup file ([#48](https://github.com/alibaba/footmark/pull/48))
 
