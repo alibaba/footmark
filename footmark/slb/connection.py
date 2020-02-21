@@ -1166,15 +1166,36 @@ class SLBConnection(ACSQueryConnection):
 
         return changed_flag, results
 
+    def list_tag_resources(self, **kwargs):
+        res = {}
+        tags = self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['TagResources', LoadBalancer])
+        for tag in tags:
+            res[tag.tag_key] = tag.tag_value
+        return res
+
     def tag_resources(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        tmp = {}
+        if kwargs['tags']:
+            for key, value in list(kwargs['tags'].items()):
+                if key in list(self.list_tag_resources(**kwargs).keys()) and value == self.list_tag_resources(**kwargs)[key]:
+                    continue
+                tmp[key] = value
+        if tmp:
+            kwargs['tags'] = tmp
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return None
 
     def untag_resources(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
-
-    def list_tag_resources(self, **kwargs):
-        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['TagResources', LoadBalancer])
-
+        tmp = []
+        if kwargs['tags']:
+            for key, value in list(kwargs['tags'].items()):
+                if key not in list(self.list_tag_resources(**kwargs).keys()):
+                    continue
+                tmp.append(key)
+        if tmp:
+            kwargs['tag_keys'] = tmp
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return False
 
 
 

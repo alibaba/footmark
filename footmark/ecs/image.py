@@ -20,7 +20,6 @@ class Image(TaggedECSObject):
             return self.image_id
         if name == 'name':
             return self.image_name
-        raise AttributeError
 
     def __setattr__(self, name, value):
         if name == 'id':
@@ -40,5 +39,13 @@ class Image(TaggedECSObject):
         """
         return self.connection.delete_image(self.id)
 
-
+    def read(self):
+        images = {}
+        for name, value in list(self.__dict__.items()):
+            if name in ["connection", "region_id", "region"]:
+                continue
+            if name == 'image_id':
+                images['id'] = value
+            images[name] = value
+        return images
 

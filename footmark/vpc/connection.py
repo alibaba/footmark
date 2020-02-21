@@ -518,9 +518,40 @@ class VPCConnection(ACSQueryConnection):
         except Exception as e:
             raise Exception("Waiting For route entry Status {0} Error: {1}.".format(status, e))
 
+    # def tag_resources(self, **kwargs):
+    #     return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+    #
+    # def un_tag_resources(self, **kwargs):
+    #     return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def list_tag_resources(self, **kwargs):
+        res = {}
+        tags = self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['TagResources', Vpc])
+        for tag in tags:
+            res[tag.tag_key] = tag.tag_value
+        return res
+
     def tag_resources(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        tmp = {}
+        if kwargs['tags']:
+            for key, value in list(kwargs['tags'].items()):
+                if key in list(self.list_tag_resources(**kwargs).keys()) and value == self.list_tag_resources(**kwargs)[key]:
+                    continue
+                tmp[key] = value
+        if tmp:
+            kwargs['tags'] = tmp
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return None
 
     def un_tag_resources(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        tmp = []
+        if kwargs['tags']:
+            for key, value in list(kwargs['tags'].items()):
+                if key not in list(self.list_tag_resources(**kwargs).keys()):
+                    continue
+                tmp.append(key)
+        if tmp:
+            kwargs['tag_keys'] = tmp
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return False
 

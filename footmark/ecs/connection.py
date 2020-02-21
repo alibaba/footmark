@@ -514,7 +514,19 @@ class ECSConnection(ACSQueryConnection):
         return self.get_list('DescribeInstanceTypeFamilies', params, ['InstanceTypeFamilies', InstanceTypeFamily])
 
     def describe_disks(self, **kwargs):
-        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Disks', Disk])
+        pagenumber = 1
+        disks = []
+        page_size = kwargs['page_size'] if 'page_size' in kwargs else 10
+
+        while True:
+            kwargs['page_number'] = pagenumber
+            disk_list = self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Disks', Disk])
+            for inst in disk_list:
+                disks.append(inst)
+            if len(disk_list) < page_size:
+                break
+            pagenumber += 1
+        return disks
 
     def get_all_volumes(self, zone_id=None, volume_ids=None, volume_name=None, filters=None):
         """
@@ -739,10 +751,8 @@ class ECSConnection(ACSQueryConnection):
             raise e
 
     def describe_security_groups(self, **kwargs):
-        groups = []
-        for group in self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['SecurityGroups', SecurityGroup]):
-            groups.append(self.describe_security_group_attribute(security_group_id=group.id))
-        return groups
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['SecurityGroups', SecurityGroup])
+
 
     def delete_security_group(self, **kwargs):
         """
@@ -1119,6 +1129,9 @@ class ECSConnection(ACSQueryConnection):
                     
             return result;
 
+    def describe_images(self, **kwargs):
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Images', Image])
+
     def get_snapshot_image(self, snapshot_id):
         params = {}
         results = []
@@ -1320,11 +1333,37 @@ class ECSConnection(ACSQueryConnection):
             time.sleep(delay)
         return False
 
-    def add_tags(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
-
-    def remove_tags(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
-
     def describe_user_data(self, **kwargs):
         return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet)
+
+    def list_tag_resources(self, **kwargs):
+        res = {}
+        tags = self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['TagResources', Instance])
+        for tag in tags:
+            res[tag.tag_key] = tag.tag_value
+        return res
+
+    def tag_resources(self, **kwargs):
+        tmp = {}
+        if kwargs['tags']:
+            for key, value in list(kwargs['tags'].items()):
+                if key in list(self.list_tag_resources(**kwargs).keys()) and value == self.list_tag_resources(**kwargs)[key]:
+                    continue
+                tmp[key] = value
+        if tmp:
+            kwargs['tags'] = tmp
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return False
+
+    def untag_resources(self, **kwargs):
+        tmp = []
+        if kwargs['tags']:
+            for key, value in list(kwargs['tags'].items()):
+                if key not in list(self.list_tag_resources(**kwargs).keys()):
+                    continue
+                tmp.append(key)
+        if tmp:
+            kwargs['tag_keys'] = tmp
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        return False
+

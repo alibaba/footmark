@@ -139,3 +139,13 @@ class Disk(TaggedECSObject):
             params['disk_id'] = self.disk_id
             return self.connection.modify_disk_attribute(**params)
         return False
+
+    def read(self):
+        disks = {}
+        for name, value in list(self.__dict__.items()):
+            if name in ["connection", "region_id", "region"]:
+                continue
+            if name == 'disk_id':
+                disks['id'] = value
+            disks[name] = value
+        return disks
