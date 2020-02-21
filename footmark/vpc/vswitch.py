@@ -75,26 +75,10 @@ class VSwitch(TaggedVPCObject):
         """
         Add tags
         """
-        remain = {}
-        if tags:
-            for key, value in list(tags.items()):
-                if key in list(self.tags.keys()) and value == self.tags[key]:
-                    continue
-                remain[key] = value
-        if remain:
-            return self.connection.tag_resources(resource_ids=[self.id], resource_type="vswitch", tags=remain)
-        return False
+        return self.connection.tag_resources(resource_ids=[self.id], tags=tags, resource_type='vswitch')
 
     def remove_tags(self, tags):
         """
         remove tags
         """
-        remain = []
-        if tags:
-            for key, value in list(tags.items()):
-                if key not in list(self.tags.keys()):
-                    continue
-                remain.append(key)
-        if remain:
-            return self.connection.un_tag_resources(resource_ids=[self.id], resource_type="vswitch", tag_keys=remain)
-        return False
+        return self.connection.un_tag_resources(resource_ids=[self.id], tags=tags, resource_type='vswitch')

@@ -196,29 +196,13 @@ class Instance(TaggedECSObject):
         """
         Add tags
         """
-        remain = {}
-        if tags:
-            for key, value in list(tags.items()):
-                if key in list(self.tags.keys()) and value == self.tags[key]:
-                    continue
-                remain[key] = value
-        if remain:
-            return self.connection.add_tags(resource_id=self.id, resource_type="instance", tags=remain)
-        return False
+        return self.connection.tag_resources(resource_ids=[self.id], tags=tags, resource_type='instance')
 
     def remove_tags(self, tags):
         """
         remove tags
         """
-        remain = {}
-        if tags:
-            for key, value in list(tags.items()):
-                if key not in list(self.tags.keys()):
-                    continue
-                remain[key] = value
-        if remain:
-            return self.connection.remove_tags(resource_id=self.id, resource_type="instance", tags=tags)
-        return False
+        return self.connection.untag_resources(resource_ids=[self.id], tags=tags, resource_type='instance')
 
     def allocate_public_ip(self):
         if self.public_ip_address:

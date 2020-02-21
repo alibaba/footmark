@@ -75,9 +75,9 @@ setup(
     # requirements files see:
     # https://packaging.python.org/en/latest/requirements.html
     install_requires=['aliyun-python-sdk-core>=2.13.10',
-                      'aliyun-python-sdk-ecs>=4.11.0,<4.11.1',
+                      'aliyun-python-sdk-ecs>=4.18.3',
                       'aliyun-python-sdk-slb>=3.2.16',
-                      'aliyun-python-sdk-vpc>=3.0.6,<=3.0.7',
+                      'aliyun-python-sdk-vpc>=3.0.7',
                       'aliyun-python-sdk-rds>=2.1.0',
                       'aliyun-python-sdk-ess>=2.1.3',
                       'aliyun-python-sdk-sts>=2.1.7',
