@@ -1,4 +1,9 @@
-## 1.17.0 (Unreleased)
+## 1.18.0 (Unreleased)
+
+## 1.17.0 (27 February, 2020)
+- change string to bytes ([#67](https://github.com/alibaba/footmark/pull/67))
+- Add new module ram ([#61](https://github.com/alibaba/footmark/pull/61))
+- improve method to add or remove tags ([#65](https://github.com/alibaba/footmark/pull/65))
 
 ## 1.16.0 (31 January, 2020)
 
