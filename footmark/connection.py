@@ -388,10 +388,12 @@ class ACSQueryConnection(ACSAuthConnection):
             if key == "user_data":
                 if not value:
                     continue
+                if isinstance(value, str):
+                    value = value.encode('ascii')
                 try:
                     if base64.b64encode(base64.b64decode(value)) != value:
                         kwargs[key] = base64.b64encode(value)
-                except TypeError:
+                except:
                     kwargs[key] = base64.b64encode(value)
 
         # Add 'Action' parameter. Using inspect.stack()[1][3] gets invoking method name
