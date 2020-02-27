@@ -155,6 +155,15 @@ class OSSResponseError(FootmarkServerError):
         super(OSSResponseError, self).__init__(status, body)
 
 
+class MARKETResponseError(FootmarkServerError):
+    """
+    Error in response from MARKET.
+    """
+
+    def __init__(self, status, body=None):
+        super(MARKETResponseError, self).__init__(status, body)
+
+
 class JSONResponseError(FootmarkServerError):
     """
     This exception expects the fully parsed and decoded JSON response
