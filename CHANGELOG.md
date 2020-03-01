@@ -1,4 +1,7 @@
-## 1.18.0 (Unreleased)
+## 1.19.0 (Unreleased)
+
+## 1.18.0 (1 March, 2020)
+- Add new module market ([#69](https://github.com/alibaba/footmark/pull/69))
 
 ## 1.17.1 (28 February, 2020)
 - fix setup error ([#68](https://github.com/alibaba/footmark/pull/68))
