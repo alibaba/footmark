@@ -147,5 +147,7 @@ class Disk(TaggedECSObject):
                 continue
             if name == 'disk_id':
                 disks['id'] = value
+            if name == 'disk_name':
+                disks['name'] = value
             disks[name] = value
         return disks
