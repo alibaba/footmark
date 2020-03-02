@@ -852,8 +852,23 @@ class ECSConnection(ACSQueryConnection):
         :return: A list of the total number of security groups, region ID of the security group,
                  the ID of the VPC to which the security group belongs
         """
-        self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
-        return self.wait_for_disk_status(disk_id=kwargs["disk_id"], status="in_use", delay=5, timeout=120)
+        delay = 3
+        timeout = DefaultTimeOut
+
+        while True:
+            try:
+                res = self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+                if res:
+                    return self.wait_for_disk_status(disk_id=kwargs["disk_id"], status="in_use", delay=5, timeout=120)
+                return False
+            except ServerException as e:
+                if e.error_code == "IncorrectInstanceStatus":
+                    pass
+            time.sleep(delay)
+            timeout -= delay
+            if timeout <= 0:
+                raise Exception("Timeout: Waiting for instance {0} status to be correct , time-consuming {1} seconds. "
+                                "Error: {2}".format(kwargs["instance_id"], timeout, e))
 
     def detach_disk(self, **kwargs):
         """
