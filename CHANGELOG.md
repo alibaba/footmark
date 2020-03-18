@@ -1,4 +1,7 @@
-## 1.19.0 (Unreleased)
+## 1.20.0 (Unreleased)
+
+## 1.19.0 (18 March, 2020)
+- improve(disk): When the instance status is not correct, try again ([#71](https://github.com/alibaba/footmark/pull/71))
 
 ## 1.18.0 (1 March, 2020)
 - Add new module market ([#69](https://github.com/alibaba/footmark/pull/69))
