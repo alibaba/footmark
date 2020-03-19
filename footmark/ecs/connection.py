@@ -596,6 +596,22 @@ class ECSConnection(ACSQueryConnection):
         """
         return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
+    def modify_instance_charge_type(self, **kwargs):
+        delay = 300
+        timeout = DefaultTimeOut
+
+        while True:
+            try:
+                return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+            except ServerException as e:
+                if e.error_code == "Throttling":
+                    time.sleep(delay)
+                    timeout -= delay
+                else:
+                    raise e
+            if timeout <= 0:
+                raise Exception("Retry time out when error_code is 'Throttling' ")
+
     def modify_instance_attribute(self, **kwargs):
         """
         modify the instance attributes such as name, description, password and host_name
