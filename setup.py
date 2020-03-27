@@ -69,7 +69,7 @@ setup(
     # simple. Or you can use find_packages().
     packages=["footmark", "footmark.ecs", "footmark.slb", "footmark.vpc", "footmark.rds", "footmark.ess",
               "footmark.oss", "footmark.pyami", "footmark.sts", "footmark.dns", "footmark.ram", "footmark.market",
-              "footmark.ros"],
+              "footmark.oos", "footmark.ros"],
 
     # List run-time dependencies here.  These will be installed by pip when
     # your project is installed. For an analysis of "install_requires" vs pip's
@@ -87,5 +87,6 @@ setup(
                       'aliyun-python-sdk-market>=2.0.24',
                       'aliyun-python-sdk-ros==3.2.0',
                       'oss2>=2.3.3',
+                      'aliyun-python-sdk-oos>=1.1.0'
                       ]
 )
