@@ -164,6 +164,15 @@ class OSSResponseError(FootmarkServerError):
         super(OSSResponseError, self).__init__(status, body)
 
 
+class OOSResponseError(FootmarkServerError):
+    """
+    Error in response from OOS.
+    """
+
+    def __init__(self, status, body=None):
+        super(OOSResponseError, self).__init__(status, body)
+
+
 class MARKETResponseError(FootmarkServerError):
     """
     Error in response from MARKET.

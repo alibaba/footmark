@@ -369,7 +369,7 @@ class ACSQueryConnection(ACSAuthConnection):
     def format_request_kwargs(self, **kwargs):
         for key, value in list(kwargs.items()):
             # Format the following parameter to JSON
-            if key in ["instance_ids", "disk_ids"]:
+            if key in ["instance_ids", "disk_ids", "execution_ids", "parameters"]:
                 if not value:
                     continue
                 kwargs[key] = json.dumps(value)
