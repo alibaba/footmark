@@ -29,9 +29,9 @@ class LoadBalancer(TaggedSLBObject):
                 value = 'PayByTraffic'
         if name == 'pay_type':
             if value == 'PayOnDemand':
-                value == "PostPaid"
+                value = "PostPaid"
             elif value == 'PrePay':
-                value == "PrePaid"
+                value = "PrePaid"
         super(TaggedSLBObject, self).__setattr__(name, value)
 
     def get(self):
@@ -94,7 +94,6 @@ class LoadBalancer(TaggedSLBObject):
                     value = value['listener_port_and_protocol']
                 else:
                     value = []
-
             if name == 'backend_servers':
                 if value and value['backend_server']:
                     value = value['backend_server']
