@@ -92,6 +92,15 @@ class ECSResponseError(FootmarkServerError):
         super(ECSResponseError, self).__init__(error)
 
 
+class ROSResponseError(FootmarkServerError):
+    """
+    Error in response from ROS.
+    """
+
+    def __init__(self, error=None):
+        super(ROSResponseError, self).__init__(error)
+
+
 class VPCResponseError(FootmarkServerError):
     """
     Error in response from VPC.
