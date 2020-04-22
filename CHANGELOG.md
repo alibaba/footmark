@@ -1,4 +1,9 @@
+## 1.21.0 (Unreleased)
+
 ## 1.20.0 (Unreleased)
+- Add new module oos ([#75](https://github.com/alibaba/footmark/pull/75))
+- Add resource_id for some modules ([#76](https://github.com/alibaba/footmark/pull/76))
+- Add new module ros ([#80](https://github.com/alibaba/footmark/pull/80))
 
 ## 1.19.0 (20 March, 2020)
 - improve(ecs): support modify instance charge type  ([#73](https://github.com/alibaba/footmark/pull/73))
