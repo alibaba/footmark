@@ -1,6 +1,6 @@
 ## 1.21.0 (Unreleased)
 
-## 1.20.0 (Unreleased)
+## 1.20.0 (22 April, 2020)
 - Add new module oos ([#75](https://github.com/alibaba/footmark/pull/75))
 - Add resource_id for some modules ([#76](https://github.com/alibaba/footmark/pull/76))
 - Add new module ros ([#80](https://github.com/alibaba/footmark/pull/80))
