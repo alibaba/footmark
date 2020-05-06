@@ -21,7 +21,7 @@ from aliyunsdkcore.auth.credentials import StsTokenCredential, EcsRamRoleCredent
 
 class ACSAuthConnection(object):
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None, security_token=None,
-                 region=None, provider='acs',  user_agent=None, ecs_role_name=None):
+                 region=None, provider='acs',  user_agent=None, ecs_role_name=None, alicloud_protocol=None):
         """
         :keyword str acs_access_key_id: Your ACS Access Key ID (provided by
             Alicloud). If none is specified, the value in your
@@ -48,7 +48,8 @@ class ACSAuthConnection(object):
                                      acs_access_key_id,
                                      acs_secret_access_key,
                                      security_token,
-                                     ecs_role_name)
+                                     ecs_role_name,
+                                     alicloud_protocol)
 
     def acs_access_key_id(self):
         return self.provider.access_key
@@ -75,12 +76,16 @@ class ACSAuthConnection(object):
 
     ecs_role_name = property(ecs_role_name)
 
+    def alicloud_protocol(self):
+        return self.provider.alicloud_protocol
+
+    alicloud_protocol = property(alicloud_protocol)
 
 class ACSQueryConnection(ACSAuthConnection):
     ResponseError = FootmarkServerError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None, region=None,
-                 product=None, security_token=None, ecs_role_name=None, provider='acs',
+                 product=None, security_token=None, ecs_role_name=None, alicloud_protocol=None, provider='acs',
                  user_agent='Alicloud-Footmark-v'+footmark.__version__):
 
         super(ACSQueryConnection, self).__init__(
@@ -90,7 +95,9 @@ class ACSQueryConnection(ACSAuthConnection):
             ecs_role_name=ecs_role_name,
             region=region,
             provider=provider,
-            user_agent=user_agent)
+            user_agent=user_agent,
+            alicloud_protocol=alicloud_protocol
+        )
 
         self.product = product
         self.user_agent = user_agent
@@ -304,12 +311,12 @@ class ACSQueryConnection(ACSAuthConnection):
 
         if not params.get('Action', params.get('action')):
             raise Exception("'Action' is required for this request.")
-
         while timeout > 0:
             request = self.import_request(params.get('Action', params.get('action')))
             request.set_accept_format('json')
             request.set_read_timeout(30)
             request.set_connect_timeout(30)
+            request.set_protocol_type(self.alicloud_protocol)
             try:
                 for k, v in list(params.items()):
                     if hasattr(request, k):
@@ -339,9 +346,9 @@ class ACSQueryConnection(ACSAuthConnection):
 
     def underscore_to_studlycaps(self, text):
         """
-        Convert a under_score string to studly_caps, like: aaa_bbb -> AaaBbb 
-        :param text: 
-        :return: 
+        Convert a under_score string to studly_caps, like: aaa_bbb -> AaaBbb
+        :param text:
+        :return:
         """
         res = ""
         for key in [_f for _f in str(text).lower().split('_') if _f]:
@@ -352,8 +359,8 @@ class ACSQueryConnection(ACSAuthConnection):
         """
         Get the current function name and the return can be StudlyCaps.
         E.G: The current name is "aaa_bbb_ccc", if is_studly_caps, return AaaBbbCcc, else return aaa_bbb_ccc
-        :param is_studly_caps: 
-        :return: 
+        :param is_studly_caps:
+        :return:
         """
         res = inspect.stack()[1][3]
         if is_studly_caps:

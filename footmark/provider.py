@@ -4,11 +4,12 @@ This class encapsulates the provider-specific header differences.
 
 
 class Provider(object):
-    def __init__(self, name, access_key=None, secret_key=None, security_token=None, ecs_role_name=None):
+    def __init__(self, name, access_key=None, secret_key=None, security_token=None, ecs_role_name=None, alicloud_protocol=None):
         self.access_key = access_key
         self.secret_key = secret_key
         self.security_token = security_token
         self.ecs_role_name = ecs_role_name
+        self.alicloud_protocol = alicloud_protocol
 
     def get_access_key(self):
         # if self._credentials_need_refresh():
@@ -47,6 +48,14 @@ class Provider(object):
         self._ecs_role_name = value
 
     ecs_role_name = property(get_ecs_role_name, set_ecs_role_name)
+
+    def get_alicloud_protocol(self):
+        return self._alicloud_protocol
+
+    def set_alicloud_protocol(self, value):
+        self._alicloud_protocol = value
+
+    alicloud_protocol = property(get_alicloud_protocol, set_alicloud_protocol)
 
 
 # Static utility method for getting default Provider.
