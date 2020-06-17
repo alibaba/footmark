@@ -17,6 +17,7 @@ class ACSMockServiceTestCase(unittest.TestCase):
 
     def initialize_service_connection(self):
         self.service_connection.make_request = mock.Mock()
+        self.service_connection.make_request_new = mock.Mock()
 
     def create_service_connection(self, **kwargs):
         if self.connection_class is None:
@@ -43,6 +44,7 @@ class ACSMockServiceTestCase(unittest.TestCase):
     def set_http_response(self, status_code, header=[], body=None):
         http_response = self.create_response(status_code, header, body)
         self.service_connection.make_request.return_value = http_response
+        self.service_connection.make_request_new.return_value = self.default_body()
 
     def default_body(self):
         return ''
