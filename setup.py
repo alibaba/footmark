@@ -85,7 +85,7 @@ setup(
                       'aliyun-python-sdk-alidns>=2.0.11',
                       'aliyun-python-sdk-ram>=3.1.0',
                       'aliyun-python-sdk-market>=2.0.24',
-                      'aliyun-python-sdk-ros==3.2.0',
+                      'aliyun-python-sdk-ros>=3.2.0',
                       'oss2>=2.3.3',
                       'aliyun-python-sdk-oos>=1.1.0'
                       ]

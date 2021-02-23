@@ -77,7 +77,8 @@ class ROSConnection(ACSQueryConnection):
                     'disable_rollback': ros_stack_obj.disable_rollback,
                     'stack_name': ros_stack_obj.stack_name,
                     'stack_id': ros_stack_obj.stack_id,
-                    'timeout_in_minutes': ros_stack_obj.timeout_in_minutes}
+                    'timeout_in_minutes': ros_stack_obj.timeout_in_minutes,
+                    'outputs': ros_stack_obj.outputs if hasattr(ros_stack_obj, 'outputs') else []}
         else:
             return {}
 
