@@ -1,7 +1,7 @@
 # encoding: utf-8
 """
 Represents a connection to the RDS service.
-"""                    
+"""
 
 import warnings
 
@@ -23,7 +23,7 @@ class RDSConnection(ACSQueryConnection):
     ResponseError = RDSResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None):
+                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None, alicloud_protocol=None):
         """
         Init method to create a new connection to RDS.
         """
@@ -39,19 +39,19 @@ class RDSConnection(ACSQueryConnection):
         super(RDSConnection, self).__init__(acs_access_key_id,
                                             acs_secret_access_key,
                                             self.region, self.RDSSDK, security_token, user_agent=user_agent,
-                                            ecs_role_name=ecs_role_name)
+                                            ecs_role_name=ecs_role_name,
+                                            alicloud_protocol=alicloud_protocol)
 
     def _create_rds_instance(self, db_engine, engine_version, db_instance_class, db_instance_storage,
-                            instance_net_type, security_ip_list, pay_type, period=None,zone=None,
-                            instance_description=None, used_time=None, instance_network_type=None, connection_mode=None,
-                            vpc_id=None, vswitch_id=None, private_ip_address=None, allocate_public_ip=False,
-                            connection_string_prefix=None, public_port=None, db_name=None, db_description=None,
-                            character_set_name=None, maint_window=None, preferred_backup_time=None,
-                            preferred_backup_period=None, backup_retention_period=None, db_tags=None, wait=None,
-                            wait_timeout=None, client_token=None):
+                             instance_net_type, security_ip_list, pay_type, period=None,zone=None,
+                             instance_description=None, used_time=None, instance_network_type=None, connection_mode=None,
+                             vpc_id=None, vswitch_id=None, private_ip_address=None, allocate_public_ip=False,
+                             connection_string_prefix=None, public_port=None, db_name=None, db_description=None,
+                             character_set_name=None, maint_window=None, preferred_backup_time=None,
+                             preferred_backup_period=None, backup_retention_period=None, db_tags=None, wait=None,
+                             wait_timeout=None, client_token=None):
         """
          Create RDS Instance
-
          :type zone: string
          :param zone:  ID of a zone to which an instance belongs
          :type db_engine: string
@@ -198,7 +198,7 @@ class RDSConnection(ACSQueryConnection):
             if maint_window and self.check_instance_status(results_instance['DBInstanceId']):
                 changed_maint_window, result_maint_window = \
                     self.modify_db_instance_maint_time(results_instance['DBInstanceId']
-                                                            , maint_window)
+                                                       , maint_window)
                 if 'error' in (''.join(str(result_maint_window))).lower():
                     results.append(result_maint_window)
 
@@ -226,7 +226,6 @@ class RDSConnection(ACSQueryConnection):
                                       vpc_id=None, vswitch_id=None, private_ip_address=None):
         """
         Create RDS Read-Only Instance
-
         :type source_instance: string
         :param source_instance: ID of the database to replicate.
         :type zone: string
@@ -300,12 +299,12 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
-             
+
         try:
-            results = self.get_status('DescribeDBInstances', params)            
+            results = self.get_status('DescribeDBInstances', params)
         except Exception as ex:
             error_code = str(ex.error_code)
             error_msg = str(ex.message)
@@ -314,12 +313,11 @@ class RDSConnection(ACSQueryConnection):
         return changed, results
 
     def _modify_rds_instance(self, instance_id, current_connection_string, connection_string_prefix, port,
-                            connection_mode, db_instance_class, db_instance_storage, pay_type, instance_description,
-                            security_ip_list, instance_network_type, vpc_id, vswitch_id, maint_window,
-                            preferred_backup_time, preferred_backup_period, backup_retention_period):
+                             connection_mode, db_instance_class, db_instance_storage, pay_type, instance_description,
+                             security_ip_list, instance_network_type, vpc_id, vswitch_id, maint_window,
+                             preferred_backup_time, preferred_backup_period, backup_retention_period):
         """
         Modify RDS Instance
-
         :type  instance_id: string
         :param instance_id: Id of the Instance to modify
         :type  current_connection_string: string
@@ -390,7 +388,7 @@ class RDSConnection(ACSQueryConnection):
                     time.sleep(60)
 
                 if self.check_instance_status(instance_id):
-                    changed_security_ip, result_security_ip =\
+                    changed_security_ip, result_security_ip = \
                         self.modify_rds_instance_security_ip_list(instance_id, security_ip_list)
 
                     if 'error' in (''.join(str(result_security_ip))).lower():
@@ -467,7 +465,7 @@ class RDSConnection(ACSQueryConnection):
     def check_instance_status(self, instance_id):
         """
         Check RDS Instance Status
-        
+
         :type  instance_id: string
         :param instance_id: Id of the Instance to modify
         :return: return true if instance status is running else false
@@ -477,21 +475,20 @@ class RDSConnection(ACSQueryConnection):
         while instance_status == "Stopped":
             try:
                 instance_info = self.get_rds_instances_info(instance_id)
-                if instance_info:    
+                if instance_info:
                     if instance_info[1]['Items']['DBInstance'][0]['DBInstanceStatus'] \
                             in ['running', 'Running']:
                         instance_status = instance_info[1]['Items']['DBInstance'][0]['DBInstanceStatus']
                         status_flag = True
                     else:
-                        time.sleep(15)                           
+                        time.sleep(15)
             except Exception as ex:
-                instance_status = "Stopped"           
+                instance_status = "Stopped"
         return status_flag
 
     def change_rds_instance_type(self, instance_id, db_instance_class, db_instance_storage, pay_type):
         """
         Change RDS Instance Type
-
         :type instance_id: string
         :param instance_id: Id of instances to change
         :type db_instance_class: string
@@ -516,10 +513,10 @@ class RDSConnection(ACSQueryConnection):
             self.build_list_params(params, db_instance_storage, 'DBInstanceStorage')
         if pay_type:
             self.build_list_params(params, pay_type, 'PayType')
-             
+
         try:
-            results = self.get_status('ModifyDBInstanceSpec', params)  
-            changed = True          
+            results = self.get_status('ModifyDBInstanceSpec', params)
+            changed = True
         except Exception as ex:
             custom_msg = [
                 "The API is showing None error code and error message while changing rds instance type",
@@ -529,11 +526,10 @@ class RDSConnection(ACSQueryConnection):
             results = results + self.rds_error_handler(ex, custom_msg)
 
         return changed, results
-    
+
     def modify_rds_instance_access_mode(self, instance_id, connection_mode):
         """
         Modify RDS Instance Access Mode
-
         :type instance_id: string
         :param instance_id: Id of instances to change
         :type  connection_mode: string
@@ -544,15 +540,15 @@ class RDSConnection(ACSQueryConnection):
         """
         params = {}
         results = []
-        changed = False  
+        changed = False
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if connection_mode:
-            self.build_list_params(params, connection_mode, 'ConnectionMode')                     
+            self.build_list_params(params, connection_mode, 'ConnectionMode')
         try:
 
-            results = self.get_status('ModifyDBInstanceConnectionMode', params)  
-            changed = True          
+            results = self.get_status('ModifyDBInstanceConnectionMode', params)
+            changed = True
         except Exception as ex:
             if (ex.args is None) or (ex.args == "need more than 2 values to unpack") \
                     or (ex.message == "need more than 2 values to unpack") or ex.error_code is None:
@@ -565,12 +561,11 @@ class RDSConnection(ACSQueryConnection):
                                " and message: " + error_msg)
 
         return changed, results
-    
+
     def modify_rds_instance_network_type(self, instance_id, instance_network_type, vpc_id, vswitch_id,
                                          private_ip_address=None):
         """
         Modify RDS Instance Network Type
-
         :type instance_id: string
         :param instance_id: Id of instances to change
         :type instance_network_type: string
@@ -588,22 +583,22 @@ class RDSConnection(ACSQueryConnection):
         """
         params = {}
         results = []
-        changed = False  
+        changed = False
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if instance_network_type:
-            self.build_list_params(params, instance_network_type, 'InstanceNetworkType')       
+            self.build_list_params(params, instance_network_type, 'InstanceNetworkType')
         if vpc_id:
             self.build_list_params(params, vpc_id, 'VPCId')
         if vswitch_id:
-            self.build_list_params(params, vswitch_id, 'VSwitchId')   
+            self.build_list_params(params, vswitch_id, 'VSwitchId')
         if private_ip_address:
             self.build_list_params(params, private_ip_address, 'PrivateIpAddress')
-                                              
+
         try:
 
-            results = self.get_status('ModifyDBInstanceNetworkType', params)  
-            changed = True          
+            results = self.get_status('ModifyDBInstanceNetworkType', params)
+            changed = True
         except Exception as ex:
             if (ex.args is None) or (ex.args == "need more than 2 values to unpack") \
                     or (ex.message == "need more than 2 values to unpack") or ex.error_code is None:
@@ -620,7 +615,6 @@ class RDSConnection(ACSQueryConnection):
     def modify_rds_instance_description(self, instance_id, instance_description):
         """
         Modify RDS Instance Description
-
         :type instance_id: string
         :param instance_id: Id of instances to change
         :type instance_id: string
@@ -632,16 +626,16 @@ class RDSConnection(ACSQueryConnection):
         """
         params = {}
         results = []
-        changed = False  
+        changed = False
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if instance_description:
-            self.build_list_params(params, instance_description, 'DBInstanceDescription')       
-                                              
+            self.build_list_params(params, instance_description, 'DBInstanceDescription')
+
         try:
 
-            results = self.get_status('ModifyDBInstanceDescription', params)  
-            changed = True          
+            results = self.get_status('ModifyDBInstanceDescription', params)
+            changed = True
         except Exception as ex:
             if (ex.args is None) or (ex.args == "need more than 2 values to unpack") \
                     or (ex.message == "need more than 2 values to unpack") or ex.error_code is None:
@@ -659,7 +653,6 @@ class RDSConnection(ACSQueryConnection):
                                              db_instance_ip_array_attribute=None):
         """
         Modify RDS Instance Security Ip List
-
         :type instance_id: string
         :param instance_id: Id of instances to change
         :type security_ip_list: list
@@ -675,20 +668,20 @@ class RDSConnection(ACSQueryConnection):
         """
         params = {}
         results = []
-        changed = False  
+        changed = False
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if security_ip_list:
-            self.build_list_params(params, security_ip_list, 'SecurityIps')       
+            self.build_list_params(params, security_ip_list, 'SecurityIps')
         if db_instance_ip_array_name:
             self.build_list_params(params, db_instance_ip_array_name, 'DBInstanceIPArrayName')
         if db_instance_ip_array_attribute:
-            self.build_list_params(params, db_instance_ip_array_attribute, 'DBInstanceIPArrayAttribute')   
-                                              
+            self.build_list_params(params, db_instance_ip_array_attribute, 'DBInstanceIPArrayAttribute')
+
         try:
 
-            results = self.get_status('ModifySecurityIps', params)  
-            changed = True          
+            results = self.get_status('ModifySecurityIps', params)
+            changed = True
         except Exception as ex:
             if (ex.args is None) or (ex.args == "need more than 2 values to unpack") \
                     or (ex.message == "need more than 2 values to unpack") or ex.error_code is None:
@@ -705,7 +698,6 @@ class RDSConnection(ACSQueryConnection):
     def create_instance_public_connection_string(self, db_instance_id, public_connection_string_prefix, public_port):
         """
         Create Instance Public Connection String
-
         :type db_instance_id: string
         :param db_instance_id: Id of instances to change
         :type public_connection_string_prefix: string
@@ -720,7 +712,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if db_instance_id:
             self.build_list_params(params, db_instance_id, 'DBInstanceId')
         if public_connection_string_prefix:
@@ -747,7 +739,6 @@ class RDSConnection(ACSQueryConnection):
                                           connection_string_prefix, port):
         """
         Modify Instance Public connection string
-
         :type db_instance_id: string
         :param db_instance_id: Id of instances to change
         :type current_connection_string: string
@@ -764,7 +755,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if db_instance_id:
             self.build_list_params(params, db_instance_id, 'DBInstanceId')
         if current_connection_string:
@@ -804,13 +795,13 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-                
+
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if maint_window:
             self.build_list_params(params, maint_window, 'MaintainTime')
         try:
-            results = self.get_status('ModifyDBInstanceMaintainTime', params)            
+            results = self.get_status('ModifyDBInstanceMaintainTime', params)
             changed = True
         except Exception as ex:
             if (ex.args is None) or (ex.args == "need more than 2 values to unpack") \
@@ -826,10 +817,9 @@ class RDSConnection(ACSQueryConnection):
         return changed, results
 
     def _modify_backup_policy(self, instance_id, preferred_backup_time, preferred_backup_period,
-                             backup_retention_period, backup_log=None):
+                              backup_retention_period, backup_log=None):
         """
         Modify Backup Policy
-
         :type instance_id: string
         :param instance_id: Id of instances to change
         :type preferred_backup_time: string
@@ -878,7 +868,6 @@ class RDSConnection(ACSQueryConnection):
     def bind_tags(self, instance_id, db_tags):
         """
         Bind Tags to Instance
-
         :type instance_id: string
         :param instance_id: Id of instances to change
         :type instance_id: dict
@@ -891,7 +880,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if db_tags:
@@ -899,7 +888,7 @@ class RDSConnection(ACSQueryConnection):
         if db_tags_json:
             self.build_list_params(params, db_tags_json, 'Tags')
         try:
-            results = self.get_status('AddTagsToResource', params)            
+            results = self.get_status('AddTagsToResource', params)
             changed = True
         except Exception as ex:
             if (ex.args is None) or (ex.args == "need more than 2 values to unpack") \
@@ -931,7 +920,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
         if db_name:
@@ -940,7 +929,7 @@ class RDSConnection(ACSQueryConnection):
             self.build_list_params(params, character_set_name, 'CharacterSetName')
         if db_description:
             self.build_list_params(params, db_description, 'DBDescription')
-        
+
         try:
             response = self.get_status('CreateDatabase', params)
             results.append(response)
@@ -987,7 +976,7 @@ class RDSConnection(ACSQueryConnection):
                 results.append({"Error Code": error_code, "Error Message": error_msg})
 
         return changed, results
-    
+
     def reset_instance_password(self, db_instance_id, account_name, account_password):
         """
         Reset instance password
@@ -1003,7 +992,7 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if db_instance_id:
             self.build_list_params(params, db_instance_id, 'DBInstanceId')
 
@@ -1012,7 +1001,7 @@ class RDSConnection(ACSQueryConnection):
 
         if account_password:
             self.build_list_params(params, account_password, 'AccountPassword')
-        
+
         try:
             response = self.get_status('ResetAccountPassword', params)
             results.append(response)
@@ -1038,10 +1027,10 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
-        
+
         try:
             response = self.get_status('RestartDBInstance', params)
             results.append(response)
@@ -1068,10 +1057,10 @@ class RDSConnection(ACSQueryConnection):
         params = {}
         results = []
         changed = False
-        
+
         if instance_id:
             self.build_list_params(params, instance_id, 'DBInstanceId')
-        
+
         try:
             response = self.get_status('DeleteDBInstance', params)
             results.append(response)
@@ -1145,7 +1134,7 @@ class RDSConnection(ACSQueryConnection):
             runing_time = runing_time + dely_time
             time.sleep(dely_time)
         return result
-    
+
     def _reset_account_password(self, db_instance_id, account_name, account_password):
         """
         Reset instance password
@@ -1169,7 +1158,6 @@ class RDSConnection(ACSQueryConnection):
     def _delete_account(self, db_instance_id, account_name):
         """
         Delete Account
-
         :type db_instance_id: str
         :param db_instance_id: Id of instance
         :type account_name: str
@@ -1185,7 +1173,6 @@ class RDSConnection(ACSQueryConnection):
     def _modify_account_description(self, db_instance_id, account_name, description):
         """
         modify Account
-
         :type db_instance_id: str
         :param db_instance_id: Id of instance
         :type account_name: str
@@ -1204,7 +1191,6 @@ class RDSConnection(ACSQueryConnection):
     def _grant_account_privilege(self, db_instance_id, account_name, db_name, account_privilege):
         """
         Grant Account Permissions
-
         :type db_instance_id: str
         :param db_instance_id: Id of instance
         :type account_name: str
@@ -1226,7 +1212,6 @@ class RDSConnection(ACSQueryConnection):
     def _revoke_account_privilege(self, db_instance_id, account_name, db_name):
         """
         Revoke Account Permissions
-
         :type db_instance_id: str
         :param db_instance_id: Id of instance
         :type account_name: str
@@ -1272,7 +1257,7 @@ class RDSConnection(ACSQueryConnection):
         """
         params = {}
         results = []
-        changed = False       
+        changed = False
 
         try:
             self.build_list_params(params, instance_id, 'DBInstanceId')
@@ -1287,7 +1272,7 @@ class RDSConnection(ACSQueryConnection):
                         self.build_list_params(params, node_id, 'NodeId')
                     if force:
                         self.build_list_params(params, force, 'Force')
-        
+
                     response = self.get_status('SwitchDBInstanceHA', params)
                     results.append(response)
                     changed = True
@@ -1346,7 +1331,7 @@ class RDSConnection(ACSQueryConnection):
         return changed, results
 
     def rds_error_handler(self, ex, custom_msg):
-        """    
+        """
         Generic method to handling errors
         :type ex: list
         :param ex: An exception object
@@ -1380,7 +1365,6 @@ class RDSConnection(ACSQueryConnection):
                           connection_mode=None, tags=None):
         """
         Get RDS Instance Info
-
         :type instance_id: string
         :param instance_id: Id of instance
         :type engine: string
