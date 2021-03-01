@@ -19,6 +19,7 @@ from footmark.ecs.image import Image
 from footmark.ecs.securitygroup import SecurityGroup
 from footmark.ecs.volume import Disk
 from footmark.ecs.networkinterface import NetworkInterfaceSet
+from footmark.ecs.keypair import KeyPair
 from footmark.exception import ECSResponseError
 from footmark.resultset import ResultSet
 from aliyunsdkcore.acs_exception.exceptions import ServerException
@@ -568,6 +569,39 @@ class ECSConnection(ACSQueryConnection):
             self.build_filter_params(params, filters)
         return self.get_list('DescribeDisks', params, ['Disks', Disk])
 
+    def create_key_pair(self, **kwargs):
+        """
+        Create a key pair in ecs
+
+        :type key_pair_name: string
+        :param key_pair_name: Name of the key pair
+
+        :type key_pair_tags: list
+        :param key_pair_tags: A list of hash/dictionaries of key pair
+            tags, '[{tag_key:"value", tag_value:"value"}]', tag_key
+            must be not null when tag_value isn't null
+        """
+        response = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), KeyPair)
+        # FIXME should write private key to ~/.ssh/keyname.pem?
+        return response
+
+    def import_key_pair(self, **kwargs):
+        """
+        Create a key pair in ecs
+
+        :type key_pair_name: string
+        :param key_pair_name: Name of the key pair
+
+        :type public_key_body: string
+        :param public_key_body: Content of the public key
+
+        :type key_pair_tags: list
+        :param key_pair_tags: A list of hash/dictionaries of key pair
+            tags, '[{tag_key:"value", tag_value:"value"}]', tag_key
+            must be not null when tag_value isn't null
+        """
+        return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), KeyPair)
+
     def attach_key_pair(self, **kwargs):
         """
         Attach a key pair to a ecs instance
@@ -595,6 +629,43 @@ class ECSConnection(ACSQueryConnection):
         :return:
         """
         return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+
+    def delete_key_pair(self, **kwargs):
+        """
+        Delete key pairs
+
+        :type key_pair_names: list
+        :param key_pair_names: Name of Key Pair which will be deleted
+
+        :rtype: bool
+        :return: A method return result of after successfully deletion of key pair
+        """
+        kwargs = self.format_request_kwargs(**kwargs)
+        delay = 5
+        timeout = DefaultTimeOut
+        while True:
+            try:
+                self.get_status_new(self.build_request_params(kwargs))
+                key_pair = self.describe_key_pairs(**kwargs)
+                if not key_pair:
+                    return True
+            except ServerException as e:
+                pass
+
+            time.sleep(delay)
+            timeout -= delay
+            if timeout <= 0:
+                raise Exception("Timeout: Waiting for deleting key pairs {0}, time-consuming {1} seconds. "
+                                "Error: {2}".format(kwargs["key_pair_names"], DefaultTimeOut-timeout, e))
+
+    def describe_key_pairs(self, **kwargs):
+        """
+        Retrieve all the key pair associated with your account.
+
+        :rtype: list
+        :return: A list of  :class:`footmark.ecs.keypair`
+        """
+        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['KeyPairs', KeyPair])
 
     def modify_instance_charge_type(self, **kwargs):
         delay = 300
@@ -696,7 +767,6 @@ class ECSConnection(ACSQueryConnection):
         """
         return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
 
-    # def create_security_group(self, **kwargs):
     def create_security_group(self, **kwargs):
         """
         create and authorize security group in ecs
@@ -768,7 +838,6 @@ class ECSConnection(ACSQueryConnection):
 
     def describe_security_groups(self, **kwargs):
         return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['SecurityGroups', SecurityGroup])
-
 
     def delete_security_group(self, **kwargs):
         """

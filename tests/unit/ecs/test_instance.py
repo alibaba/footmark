@@ -325,7 +325,7 @@ CREATE_DISK = '''
     "result": ["Disk Creation Successful"]
 }
 '''
-  
+
 DELETE_IMAGE = '''
 {
     "PageSize": 10,
@@ -401,6 +401,41 @@ CREATE_IMAGE = '''
             "SnapshotId": "s-j6ccfgptbi05ha1csvw9"
         }]
     }
+}
+'''
+
+CREATE_KEY_PAIR = '''
+{
+    "RequestId": "473469C7-AA6F-4DC5-B3DB-A3DC0DE3C83E",
+    "KeyPairName": "TestKeyPairV23",
+    "KeyPairId": "ssh-bp67acfmxazb4ph***",
+    "KeyPairFingerPrint": "89:f0:ba:62:ac:b8:aa:e1:61:5e:fd:81:69:86:6d:6b:f0:c0:5a:**",
+    "PrivateKeyBody": "MIIEpAIBAAKCAQEAtReyMzLIcBH78EV2zj****"
+}
+'''
+
+IMPORT_KEY_PAIR = '''
+{
+    "RequestId": "473469C7-AA6F-4DC5-B3DB-A3DC0DE3C83E",
+    "KeyPairName": "testKey",
+    "KeyPairFingerPrint": "89:f0:ba:62:ac:b8:aa:e1:61:5e:fd:81:69:86:6d:6b:f0:c0:5a:**"
+}
+'''
+
+DESCRIBE_KEY_PAIR = '''
+{
+    "PageNumber": 1,
+    "PageSize": 1,
+    "TotalCount": 1,
+    "KeyPairs": {
+        "KeyPair": [{
+            "CreationTime": "2018-10-10T01:00Z",
+            "ResourceGroupId": "",
+            "KeyPairName": "testKey",
+            "KeyPairFingerPrint": "89:f0:ba:62:ac:b8:aa:e1:61:5e:fd:81:69:86:6d:6b:f0:c0:5a:**"
+        }]
+    },
+    "RequestId": "473469C7-AA6F-4DC5-B3DB-A3DC0DE3C83E"
 }
 '''
 
@@ -695,12 +730,12 @@ class TestGetInstance(ACSMockServiceTestCase):
         self.set_http_response(status_code=200)
         result = self.service_connection.get_instance_status(zone_id=None, pagenumber=self.pagenumber,
                                                              pagesize=self.pagesize)
-        
+
         self.assertEqual(result[1][u'PageNumber'], self.pagenumber)
         self.assertEqual(result[1][u'PageSize'], self.pagesize)
 
 
-class TestJoinSecGrp(ACSMockServiceTestCase): 
+class TestJoinSecGrp(ACSMockServiceTestCase):
     connection_class = ECSConnection
     instance_ids = ["i-2zehfxz81ar5kvptw8b1"]
     group_id = 'sg-2zeewmie535ht7d90cki'
@@ -722,7 +757,7 @@ class TestJoinSecGrp(ACSMockServiceTestCase):
             res = "fail"
 
 
-class TestLeaveSecGrp(ACSMockServiceTestCase): 
+class TestLeaveSecGrp(ACSMockServiceTestCase):
     connection_class = ECSConnection
     instance_ids = ["i-j6c5txh3q0wivxt5m807"]
     group_id = 'sg-j6c34iujuqbw29zpd53u'
@@ -746,11 +781,11 @@ class TestLeaveSecGrp(ACSMockServiceTestCase):
 
 class TestCreateDisk(ACSMockServiceTestCase):
     connection_class = ECSConnection
-   
-    region =  'us-west-1'  
+
+    region =  'us-west-1'
     disk_category = 'cloud'
     zone_id = 'us-west-1a'
-    disk_name = 'aspen'    
+    disk_name = 'aspen'
     size = 20
     state = 'present'
 
@@ -766,10 +801,10 @@ class TestCreateDisk(ACSMockServiceTestCase):
 
         self.assertEqual(disk_id, u'd-rj91n5w6koukwqqkxsf8')
         rs = result[0]
-        self.assertEqual(rs, u'Disk Creation Successful')    
+        self.assertEqual(rs, u'Disk Creation Successful')
 
 
-class TestAttachDisk(ACSMockServiceTestCase): 
+class TestAttachDisk(ACSMockServiceTestCase):
     connection_class = ECSConnection
     instance_ids = ["i-j6c5txh3q0wivxt5m807"]
     disk_id = 'd-j6cc9ssgxbkjdf55w8p7'
@@ -777,7 +812,7 @@ class TestAttachDisk(ACSMockServiceTestCase):
     device = None
     delete_with_instance = None
     state = 'present'
-    
+
     def default_body(self):
         return ATTACH_DISK
 
@@ -790,11 +825,11 @@ class TestAttachDisk(ACSMockServiceTestCase):
         self.assertEqual(result[0]['RequestId'], "AF3991A3-5203-4F83-8FAD-FDC1253AF15D")
 
 
-class TestDetachDisk(ACSMockServiceTestCase): 
+class TestDetachDisk(ACSMockServiceTestCase):
     connection_class = ECSConnection
-    region_id = "cn-beijing"           
+    region_id = "cn-beijing"
     disk_id = "d-2zecexhwthhw5wyco3m2"
-    
+
     def default_body(self):
         return DETACH_DISK
 
@@ -819,8 +854,8 @@ class TestDeleteDisk(ACSMockServiceTestCase):
             self.assertEqual(result[u'RequestId'], "AF3991A3-5203-4F83-8FAD-FDC1253AF15D")
         else:
             self.assertEqual(result[0], {'Error Code:': 'InvalidDiskId.NotFound', 'Error Message:': 'Disk not exist'})
-                                                  
- 
+
+
 class TestCreateImage(ACSMockServiceTestCase):
     connection_class = ECSConnection
     region_id = 'cn-hongkong'
@@ -834,7 +869,7 @@ class TestCreateImage(ACSMockServiceTestCase):
 
     def default_body(self):
         return CREATE_IMAGE
-   
+
     def test_create_image(self):
         self.set_http_response(status_code=200)
         changed, image_id, result, request_id = self.service_connection.create_image(snapshot_id=self.snapshot_id,
@@ -845,10 +880,10 @@ class TestCreateImage(ACSMockServiceTestCase):
                                                                                      instance_id=self.instance_id,
                                                                                      disk_mapping=self.disk_mapping,
                                                                                      wait=None, wait_timeout=None)
-        self.assertEqual(image_id, 'm-j6cb0rw4eso5jsc6927n')               
+        self.assertEqual(image_id, 'm-j6cb0rw4eso5jsc6927n')
 
 
-class TestDeleteImage(ACSMockServiceTestCase): 
+class TestDeleteImage(ACSMockServiceTestCase):
     connection_class = ECSConnection
 
     image_id = 'm-j6chvbnmr7lr6tg9276s'
@@ -864,13 +899,64 @@ class TestDeleteImage(ACSMockServiceTestCase):
         self.assertEqual(result[0][u'RequestId'], "EB62BD82-B468-4CDC-BF97-91C9A97996FA")
 
 
+class TestCreateKeyPair(ACSMockServiceTestCase):
+    connection_class = ECSConnection
+    key_pair_name = "TestKeyPairV23"
+    key_pair_tags = [
+        {
+            "tag_key": "create_test_1",
+            "tag_value": "0.01"
+        },
+        {
+            "tag_key": "create_test_2",
+            "tag_value": "0.02"
+        }
+    ]
+
+    def default_body(self):
+        return CREATE_KEY_PAIR
+
+    def test_create_key_pair(self):
+        self.set_http_response(status_code=200)
+        result = self.service_connection.create_key_pair(
+            key_pair_name=self.key_pair_name,
+            key_pair_tags=self.key_pair_tags)
+
+        self.assertEqual(result.id, u'ssh-bp67acfmxazb4ph***')
+        self.assertEqual(result.name, self.key_pair_name)
 
 
+class TestImportKeyPair(ACSMockServiceTestCase):
+    connection_class = ECSConnection
+    key_pair_name = "testKey"
+    public_key_body = 'ssh-rsa APCnIaMa+cQZ'
+    finger_print = "89:f0:ba:62:ac:b8:aa:e1:61:5e:fd:81:69:86:6d:6b:f0:c0:5a:**"
+
+    def default_body(self):
+        return IMPORT_KEY_PAIR
+
+    def test_import_key_pair(self):
+        self.set_http_response(status_code=200)
+        result = self.service_connection.import_key_pair(
+            key_pair_name=self.key_pair_name,
+            public_key_body=self.public_key_body
+        )
+
+        self.assertEqual(result.finger_print, self.finger_print)
+        self.assertEqual(result.name, self.key_pair_name)
 
 
+class TestDescribeKeyPair(ACSMockServiceTestCase):
+    connection_class = ECSConnection
+    key_pair_name = "testKey"
+    finger_print = "89:f0:ba:62:ac:b8:aa:e1:61:5e:fd:81:69:86:6d:6b:f0:c0:5a:**"
 
+    def default_body(self):
+        return IMPORT_KEY_PAIR
 
+    def test_describe_key_pair(self):
+        self.set_http_response(status_code=200)
+        result = self.service_connection.describe_key_pairs()
 
-
-
-
+        self.assertEqual(result.key_pair_finger_print, self.finger_print)
+        self.assertEqual(result.key_pair_name, self.key_pair_name)
