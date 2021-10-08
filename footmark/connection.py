@@ -251,7 +251,7 @@ class ACSQueryConnection(ACSAuthConnection):
         try:
             body = self.make_request(action, params)
             footmark.log.debug('body= %s' % body)
-            body = json.loads(body, encoding='UTF-8')
+            body = json.loads(body)
             if body:
                 return True
             return False
@@ -423,7 +423,7 @@ class ACSQueryConnection(ACSAuthConnection):
         try:
             body = self.make_request_new(params)
             footmark.log.debug('body= %s' % body)
-            body = json.loads(body, encoding='UTF-8')
+            body = json.loads(body)
             if body:
                 return True
             return False
