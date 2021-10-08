@@ -1,4 +1,10 @@
-## 1.21.0 (Unreleased)
+## 1.22.0 (Unreleased)
+## 1.21.0 (8 October 2021)
+
+- fix error: unexpected keyword argument 'encoding' which happened in python3.9+ ([#88](https://github.com/alibaba/footmark/pull/88))
+- improve(ros): add attribute outputs ([#86](https://github.com/alibaba/footmark/pull/86))
+- Update README.md ([#85](https://github.com/alibaba/footmark/pull/85))
+- improve(ecs): support methods to manage ECS key pair ([#83](https://github.com/alibaba/footmark/pull/83))
 
 ## 1.20.0 (22 April, 2020)
 - Add new module oos ([#75](https://github.com/alibaba/footmark/pull/75))
