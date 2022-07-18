@@ -1,4 +1,8 @@
-## 1.22.0 (Unreleased)
+## 1.23.0 (Unreleased)
+## 1.22.0 (18 July 2022)
+
+- oss module supports security token ([#89](https://github.com/alibaba/footmark/pull/89))
+
 ## 1.21.0 (8 October 2021)
 
 - fix error: unexpected keyword argument 'encoding' which happened in python3.9+ ([#88](https://github.com/alibaba/footmark/pull/88))
