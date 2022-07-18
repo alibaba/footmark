@@ -16,7 +16,7 @@ class OSSConnection(ACSQueryConnection):
     ResponseError = OSSResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, user_agent=None):
+                 region=None, security_token=None, user_agent=None):
         """
         Init method to create a new connection to OSS.
         """
@@ -27,7 +27,10 @@ class OSSConnection(ACSQueryConnection):
 
         self.endpoint = "http://oss-" + self.region + ".aliyuncs.com"
 
-        self.auth = oss2.Auth(acs_access_key_id, acs_secret_access_key)
+        if security_token:
+            self.auth = oss2.StsAuth(acs_access_key_id, acs_secret_access_key, security_token)
+        else:
+            self.auth = oss2.Auth(acs_access_key_id, acs_secret_access_key)
 
         # self.user_agent = user_agent
         self.service = oss2.Service(self.auth, self.endpoint)
