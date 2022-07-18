@@ -16,11 +16,11 @@ class Bucket(OSSConnection):
     """
 
     def __init__(self, acs_access_key_id, acs_secret_access_key,
-                 region, bucket_name, user_agent=None):
+                 region, bucket_name, security_token=None, user_agent=None):
         """
         Init method to create a new bucket object.
         """
-        super(Bucket, self).__init__(acs_access_key_id, acs_secret_access_key, region, bucket_name)
+        super(Bucket, self).__init__(acs_access_key_id, acs_secret_access_key, region, security_token)
         self.bucket_name = bucket_name
         self.bucket = oss2.Bucket(self.auth, self.endpoint, self.bucket_name)
         # self.grant = self.bucket.get_bucket_acl()
