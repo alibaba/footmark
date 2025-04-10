@@ -443,7 +443,19 @@ class ECSConnection(ACSQueryConnection):
                 instance_ids = [instance_ids]
             for instance_id in instance_ids:
                 kwargs["instance_id"]= instance_id
-                self.get_status_new(self.build_request_params(kwargs))
+                retry = 10
+                while retry:
+                    try:
+                        self.get_status_new(self.build_request_params(kwargs))
+                        break
+                    except ServerException as e:
+                        if e.error_code == "IncorrectInstanceStatus.Initializing":
+                            time.sleep(5)
+                            retry -= 1
+                            continue
+                        raise e
+                if retry <= 0:
+                    self.get_status_new(self.build_request_params(kwargs))
             while instance_ids:
                 if self.describe_instances(instance_ids=instance_ids):
                     continue
