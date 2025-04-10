@@ -105,17 +105,20 @@ class VPCConnection(ACSQueryConnection):
         return False
 
     def delete_vpc(self, **kwargs):
-        retry = 5
+        retry = 10
         while retry:
             try:
                 return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
-            except ServerException as e:
-                if str(e.error_code) == "Forbbiden" or str(e.error_code).find("Dependency"):
+            except Exception as e:
+                if e.error_code == "IncorrectVpcStatus" or e.error_code.startswith("DependencyViolation"):
                     time.sleep(5)
                     retry -= 1
                     continue
                 raise e
-        return False
+        try:
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        except Exception as e:
+            raise e
 
     def create_vswitch(self, **kwargs):
         vswitch_id = self.get_object_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))), ResultSet).vswitch_id
@@ -138,7 +141,22 @@ class VPCConnection(ACSQueryConnection):
         return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
 
     def delete_vswitch(self, **kwargs):
-        return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        retry = 10
+        while retry:
+            try:
+                return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
+            except Exception as e:
+                if e.error_code == "IncorrectVSwitchStatus" \
+                        or e.error_code.startswith("DependencyViolation")\
+                        or e.error_code.startswith("OperationDenied"):
+                    time.sleep(5)
+                    retry -= 1
+                    continue
+                raise e
+        try:
+            return self.get_status_new(self.build_request_params(self.format_vpc_request_kwargs(**self.format_request_kwargs(**kwargs))))
+        except Exception as e:
+            raise e
 
     def create_route_entry(self, **kwargs):
         """
