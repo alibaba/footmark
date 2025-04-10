@@ -379,7 +379,20 @@ class VPCConnection(ACSQueryConnection):
         :param bandwidth:Bandwidth of the EIP instance
         :return:Request Id
         """
-        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        retry = 10
+        while retry:
+            try:
+                return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+            except Exception as e:
+                if e.error_code == "OperationConflict":
+                    time.sleep(5)
+                    retry -= 1
+                    continue
+                raise e
+        try:
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        except Exception as e:
+            raise e
 
     def release_eip_address(self, **kwargs):
         """
