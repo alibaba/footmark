@@ -1,4 +1,11 @@
-## 1.23.0 (Unreleased)
+## 1.24.0 (Unreleased)
+## 1.23.0 (14 April 2025)
+
+- improves(ecs): supports retry for error IncorrectInstanceStatus.Initializing when deleting it ([#93](https://github.com/alibaba/footmark/pull/93))
+- improves(vpc): supports retry for error OperationConflict when updating eip attribute ([#92](https://github.com/alibaba/footmark/pull/92))
+- improves(vpc): supports retry for error OperationConflict when updating eip attribute ([#91](https://github.com/alibaba/footmark/pull/91))
+- improves(vpc): supports vpc and vswitch retry for error DependencyViolation.* when deleting them ([#90](https://github.com/alibaba/footmark/pull/90))
+
 ## 1.22.0 (18 July 2022)
 
 - oss module supports security token ([#89](https://github.com/alibaba/footmark/pull/89))
