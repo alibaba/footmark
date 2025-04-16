@@ -113,14 +113,14 @@ class LoadBalancerListener(TaggedSLBObject):
                             vserver_group_id='',\
                             gzip='',\
                             server_certificate_id='',\
-                            master_slave_server_group_id='',\
+                            main_subordinate_server_group_id='',\
                             persistence_timeout=None,\
                             health_check_connect_timeout=None,\
                             ca_certificate_id='',\
                             syn_proxy='',\
                             health_check_type='',\
                             vserver_group='',\
-                            master_slave_server_group=''):
+                            main_subordinate_server_group=''):
         '''
         set listener attribute
         '''
@@ -145,14 +145,14 @@ class LoadBalancerListener(TaggedSLBObject):
                                     vserver_group_id=vserver_group_id,\
                                     gzip=gzip,\
                                     server_certificate_id=server_certificate_id,\
-                                    master_slave_server_group_id=master_slave_server_group_id,\
+                                    main_subordinate_server_group_id=main_subordinate_server_group_id,\
                                     persistence_timeout=persistence_timeout,\
                                     health_check_connect_timeout=health_check_connect_timeout,\
                                     ca_certificate_id=ca_certificate_id,\
                                     syn_proxy=syn_proxy,\
                                     health_check_type=health_check_type,\
                                     vserver_group=vserver_group,\
-                                    master_slave_server_group=master_slave_server_group)
+                                    main_subordinate_server_group=main_subordinate_server_group)
     
     def remove_white_list_item(self, load_balancer_id, source_items):
         '''
