@@ -59,7 +59,7 @@ class LoadBalancer(TaggedSLBObject):
         modify load balancer name
         '''
         params = {}
-        if internet_charge_type and str.lower(self.internet_charge_type) != str.lower(internet_charge_type):
+        if internet_charge_type and self.internet_charge_type_alias and str.lower(self.internet_charge_type_alias) != str.lower(internet_charge_type):
             params['internet_charge_type'] = str.lower(internet_charge_type)
         if internet_charge_type and str(internet_charge_type).lower() == "paybybandwidth":
             if bandwidth and int(self.bandwidth) != int(bandwidth):
