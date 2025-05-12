@@ -401,7 +401,20 @@ class VPCConnection(ACSQueryConnection):
         :param allocation_id: To release the allocation ID,allocation ID uniquely identifies the EIP
         :return: Return status of operation
         """
-        return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        retry = 10
+        while retry:
+            try:
+                return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+            except Exception as e:
+                if e.error_code == "IncorrectEipStatus":
+                    time.sleep(5)
+                    retry -= 1
+                    continue
+                raise e
+        try:
+            return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
+        except Exception as e:
+            raise e
 
     def get_all_vrouters(self, vrouter_id=None, pagenumber=None, pagesize=None):
         """
