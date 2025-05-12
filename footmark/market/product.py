@@ -32,3 +32,21 @@ class Product(TaggedPRODUCTObject):
             product[name] = value
         return product
 
+    def read_with_region_name(self, region_name):
+        product = {}
+
+        for name, value in list(self.__dict__.items()):
+            if name in ["connection", "region_id", "region", "request_id", "description", "product_extras","shop_info", "pic_url"]:
+                continue
+            if name == 'product_skus':
+                result = []
+                for m in value['product_sku'][0]['modules']['module']:
+                    if m['code'] == 'img_id':
+                        res = m['properties']['property'][0]['property_values']['property_value']
+                        for r in res:
+                            if r['display_name'].startswith(region_name):
+                                result.append(r)
+                product['images'] = result
+                continue
+            product[name] = value
+        return product
