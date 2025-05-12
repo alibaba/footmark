@@ -1,4 +1,10 @@
-## 1.24.0 (Unreleased)
+## 1.25.0 (Unreleased)
+## 1.24.0 (12 May 2025)
+
+- improves(vpc): adds retry when releasing an eip address ([#96](https://github.com/alibaba/footmark/pull/96))
+- improves(slb): fixes the modifying spec error caused by internet_charge_type ([#95](https://github.com/alibaba/footmark/pull/95))
+- improves(market): adds new method read_with_region_name to filter images ([#94](https://github.com/alibaba/footmark/pull/94))
+  
 ## 1.23.0 (14 April 2025)
 
 - improves(ecs): supports retry for error IncorrectInstanceStatus.Initializing when deleting it ([#93](https://github.com/alibaba/footmark/pull/93))
