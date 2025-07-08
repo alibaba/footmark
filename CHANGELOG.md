@@ -1,4 +1,8 @@
-## 1.25.0 (Unreleased)
+## 1.26.0 (Unreleased)
+## 1.25.0 (08 July 2025)
+
+- improve(ros): fixes the update ros stack error that parameters does not work ([#97](https://github.com/alibaba/footmark/pull/97))
+
 ## 1.24.0 (12 May 2025)
 
 - improves(vpc): adds retry when releasing an eip address ([#96](https://github.com/alibaba/footmark/pull/96))
