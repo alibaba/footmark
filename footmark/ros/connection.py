@@ -34,8 +34,8 @@ class ROSConnection(ACSQueryConnection):
     def create_stack(self, **kwargs):
         stack_id = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)),
                                        ResultSet).stack_id
-        stack_info = self.get_stack(stack_id=stack_id)
-        return stack_info
+        self.wait_for_ros_status(stack_id, 'CREATE_COMPLETE', 4, 720)
+        return self.get_stack(stack_id=stack_id)
 
     def delete_stack(self, **kwargs):
         retry = 5
@@ -50,10 +50,13 @@ class ROSConnection(ACSQueryConnection):
         return False
 
     def update_stack(self, **kwargs):
-        stack_id = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)),
-                                       ResultSet).stack_id
-        stack_info = self.get_stack(stack_id=stack_id)
-        return stack_info
+        try:
+            stack_id = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)),
+                                           ResultSet).stack_id
+            self.wait_for_ros_status(stack_id, 'UPDATE_COMPLETE', 4, 720)
+            return self.get_stack(stack_id=stack_id)
+        except Exception as e:
+            raise ROSResponseError(e)
 
     def list_stacks(self, **kwargs):
         ros_stack_objs = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet)
@@ -81,4 +84,21 @@ class ROSConnection(ACSQueryConnection):
                     'outputs': ros_stack_obj.outputs if hasattr(ros_stack_obj, 'outputs') else []}
         else:
             return {}
+
+    def wait_for_ros_status(self, stack_id, status, delay, timeout):
+
+        try:
+            while True:
+                stack = self.get_stack(stack_id=stack_id)
+                if stack and str(stack['status']) in [status, str(status).lower()]:
+                    return True
+
+                timeout -= delay
+
+                if timeout <= 0:
+                    raise Exception("Timeout Error: Waiting for ROS stack status is %s, time-consuming %d seconds." % (status, timeout))
+
+                time.sleep(delay)
+        except Exception as e:
+            raise e
 
