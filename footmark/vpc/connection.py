@@ -22,7 +22,7 @@ class VPCConnection(ACSQueryConnection):
     ResponseError = VPCResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None):
+                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None, alicloud_protocol=None):
         """
         Init method to create a new connection to ECS.
         """
@@ -39,7 +39,8 @@ class VPCConnection(ACSQueryConnection):
                                             acs_secret_access_key=acs_secret_access_key,
                                             region=self.region, product=self.VPCSDK,
                                             security_token=security_token, user_agent=user_agent,
-                                            ecs_role_name=ecs_role_name)
+                                            ecs_role_name=ecs_role_name,
+                                            alicloud_protocol=alicloud_protocol)
 
     def build_filter_params(self, params, filters):
         if not isinstance(filters, dict):
@@ -289,8 +290,8 @@ class VPCConnection(ACSQueryConnection):
             v_ids = {}
             response = self.get_status('DescribeInstances', params)
             results.append(response)
-            
-        except Exception as ex:        
+
+        except Exception as ex:
             error_code = ex.error_code
             error_msg = ex.message
             results.append({"Error Code": error_code, "Error Message": error_msg})
@@ -306,7 +307,7 @@ class VPCConnection(ACSQueryConnection):
         :param internet_charge_type : paybytraffic or paybybandwidth types
         :return: Return the allocationId , requestId and EIP address
         """
-                  
+
         id = self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ResultSet).allocation_id
         self.wait_for_eip_status(allocation_id=id, status='Available', interval=3, timeout=60)
         eips = self.describe_eip_addresses(allocation_id=id)
@@ -598,4 +599,3 @@ class VPCConnection(ACSQueryConnection):
             kwargs['tag_keys'] = tmp
             return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
         return False
-

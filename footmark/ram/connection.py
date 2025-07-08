@@ -14,7 +14,7 @@ class RAMConnection(ACSQueryConnection):
     ResponseError = RAMResponseError
 
     def __init__(self, acs_access_key_id=None, acs_secret_access_key=None,
-                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None):
+                 region=None, sdk_version=None, security_token=None, ecs_role_name=None, user_agent=None, alicloud_protocol=None):
         """
         Init method to create a new connection to STS.
         """
@@ -32,7 +32,8 @@ class RAMConnection(ACSQueryConnection):
                                             security_token=security_token,
                                             region=self.region, product=self.RAMSDK,
                                             user_agent=user_agent,
-                                            ecs_role_name=ecs_role_name)
+                                            ecs_role_name=ecs_role_name,
+                                            alicloud_protocol=alicloud_protocol)
 
     def list_users(self, **kwargs):
         results = []
