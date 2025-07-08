@@ -268,8 +268,8 @@ class TestCreateLoadBalancer(ACSMockServiceTestCase):
     internet_charge_type = None
     bandwidth = None
     vswitch_id = None
-    master_zone_id = "cn-beijing-b"
-    slave_zone_id = "cn-beijing-a"
+    main_zone_id = "cn-beijing-b"
+    subordinate_zone_id = "cn-beijing-a"
     instance_ids = None
     validate_cert = None
     tags = None
@@ -285,8 +285,8 @@ class TestCreateLoadBalancer(ACSMockServiceTestCase):
                                                                        address_type=self.address_type,
                                                                        vswitch_id=self.vswitch_id,
                                                                        internet_charge_type=self.internet_charge_type,
-                                                                       master_zone_id=self.master_zone_id,
-                                                                       slave_zone_id=self.slave_zone_id,
+                                                                       main_zone_id=self.main_zone_id,
+                                                                       subordinate_zone_id=self.subordinate_zone_id,
                                                                        bandwidth=self.bandwidth,
                                                                        listeners=self.listeners,
                                                                        instance_ids=self.instance_ids,
