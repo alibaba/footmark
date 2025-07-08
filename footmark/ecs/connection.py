@@ -264,7 +264,7 @@ class ECSConnection(ACSQueryConnection):
     #                       spot_strategy=None, internet_charge_type=None, image_id=None, status=None,
     #                       io_optimized=None, pagenumber=None, pagesize=100):
         """
-        Retrieve all the instance associated with your account. 
+        Retrieve all the instance associated with your account.
 
         :rtype: list
         :return: A list of  :class:`footmark.ecs.instance`
@@ -280,7 +280,7 @@ class ECSConnection(ACSQueryConnection):
                 tags = []
                 if isinstance(value, dict):
                     for k, v in list(value.items()):
-                        tags.append({"Key": k, "Value": v})
+                        tags.append({"Key": k, "value": v})
                 kwargs[key] = value
             kwargs['Action'] = 'DescribeInstances'
             for inst in self.get_list_new(self.build_request_params(filters), ['Instances', Instance]):
@@ -916,7 +916,7 @@ class ECSConnection(ACSQueryConnection):
         :type disk_tags: list
         :param disk_tags: A list of hash/dictionaries of instance
             tags, '[{tag_key:"value", tag_value:"value"}]', tag_key
-            must be not null when tag_value isn't null        
+            must be not null when tag_value isn't null
 
         :type snapshot_id: integer
         :param snapshot_id: Snapshots are used to create the data disk
@@ -1045,7 +1045,7 @@ class ECSConnection(ACSQueryConnection):
 
         :type disk_mapping: list
         :param disk_mapping: An optional list of device hashes/dictionaries with custom configurations
-      
+
         :type client_token: string
         :param client_token: An optional list of device hashes/dictionaries with custom configurations
 
@@ -1139,7 +1139,7 @@ class ECSConnection(ACSQueryConnection):
 
             results.append("Image creation successful")
             changed = True
-         
+
         except ServerException as e:
             results.append({"Error Code": e.error_code, "Error Message": e.message,
                             "RequestId": e.request_id, "Http Status": e.http_status})
@@ -1152,7 +1152,7 @@ class ECSConnection(ACSQueryConnection):
         """
         Delete image , delete image inside particular region.
         :type image_id: dict
-        :param image_id: ID of an Image        
+        :param image_id: ID of an Image
         :rtype: Return status of Operation
         """
         params = {}
@@ -1184,7 +1184,7 @@ class ECSConnection(ACSQueryConnection):
 
         return changed
 
-    def get_all_images(self, image_id=None, image_name=None, 
+    def get_all_images(self, image_id=None, image_name=None,
                            snapshot_id=None, filters=None):
             """
             Get all Volumes associated with the current credentials.
@@ -1193,10 +1193,10 @@ class ECSConnection(ACSQueryConnection):
             :param image_id: Optional  image id.  If this is present,
                              only the image associated with these
                              image id will be returned.
-        
+
             :type image_name: dict
             :param image_name: Optional image name.  If this is present,
-                               only the image associated with these 
+                               only the image associated with these
                                image name will be returned.
 
             :type snapshot_id: list
@@ -1237,8 +1237,8 @@ class ECSConnection(ACSQueryConnection):
                     result = self.get_list('DescribeImages', params, ['Images', Image])
                     if result:
                         changed = True;
-                        break                
-                    
+                        break
+
             return result;
 
     def describe_images(self, **kwargs):
@@ -1478,4 +1478,3 @@ class ECSConnection(ACSQueryConnection):
             kwargs['tag_keys'] = tmp
             return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
         return False
-
