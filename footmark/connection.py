@@ -122,6 +122,8 @@ class ACSQueryConnection(ACSAuthConnection):
                 name = str(key).lower().replace("-", "").replace("_", "")
                 if name in methods:
                     params[methods[name]] = value
+                elif name.endswith('s') and name[:-1] in methods:
+                    params[methods[name[:-1]]] = value
         return params
 
     def make_request(self, action, params=None):
