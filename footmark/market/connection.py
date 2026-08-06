@@ -44,6 +44,12 @@ class MARKETConnection(ACSQueryConnection):
         if page_size < 1 or page_size > 100:
             raise ValueError('page_size must be between 1 and 100')
 
+        # DescribeProducts accepts values up to 100, but the Market endpoint
+        # returns at most 50 records per response.  Use the effective server
+        # page size for the termination condition so a request for 100 does
+        # not stop after the first (50-record) response.
+        page_size = min(page_size, 50)
+
         products = []
         page_number = 1
         while True:

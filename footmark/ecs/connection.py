@@ -91,8 +91,12 @@ class ECSConnection(ACSQueryConnection):
                 if tag_no > max_tag_number:
                     break
                 if key:
-                    self.build_list_params(params, key, 'Tag' + str(tag_no) + 'Key')
-                    self.build_list_params(params, value, 'Tag' + str(tag_no) + 'Value')
+                    # ECS expects the dotted query names Tag.N.Key/Tag.N.Value.
+                    # build_list_params prefixes values with ``set_`` so the
+                    # generic request adapter passes the exact dotted name to
+                    # the OpenAPI request instead of the legacy TagNKey form.
+                    self.build_list_params(params, key, 'Tag.' + str(tag_no) + '.Key')
+                    self.build_list_params(params, value, 'Tag.' + str(tag_no) + '.Value')
                     tag_no += 1
 
     def create_instances(self, **kwargs):
@@ -652,14 +656,21 @@ class ECSConnection(ACSQueryConnection):
         :rtype: bool
         :return: A method return result of after successfully deletion of key pair
         """
+        key_pair_names = kwargs.get('key_pair_names', [])
         kwargs = self.format_request_kwargs(**kwargs)
+        # The ECS API is DeleteKeyPairs (plural), while this convenience
+        # method intentionally uses the singular Python name.
+        kwargs['Action'] = 'DeleteKeyPairs'
         delay = 5
         timeout = DefaultTimeOut
         while True:
             try:
                 self.get_status_new(self.build_request_params(kwargs))
-                key_pair = self.describe_key_pairs(**kwargs)
-                if not key_pair:
+                remaining = [
+                    name for name in key_pair_names
+                    if self.describe_key_pairs(key_pair_name=name)
+                ]
+                if not remaining:
                     return True
             except ServerException as e:
                 pass
@@ -1136,9 +1147,11 @@ class ECSConnection(ACSQueryConnection):
                 request_id = response.request_id
 
             if wait:
-                if not wait_timeout:
-                    wait_timeout = 300
-                time.sleep(wait_timeout)
+                self.wait_for_image_status(
+                    image_id,
+                    'Available',
+                    timeout=wait_timeout or DefaultTimeOut,
+                )
 
             results.append("Image creation successful")
             changed = True
@@ -1147,7 +1160,7 @@ class ECSConnection(ACSQueryConnection):
             results.append({"Error Code": e.error_code, "Error Message": e.message,
                             "RequestId": e.request_id, "Http Status": e.http_status})
         except Exception as e:
-            results.append({"Error:": e})
+            results.append({"Error Code": "Image.WaitFailed", "Error Message": str(e)})
 
         return changed, image_id, results, request_id
 
@@ -1186,6 +1199,25 @@ class ECSConnection(ACSQueryConnection):
             changed = False
 
         return changed
+
+    def wait_for_image_status(self, image_id, status,
+                              delay=DefaultWaitForInterval, timeout=DefaultTimeOut):
+        """Wait until a custom image reaches the requested ECS status."""
+        remaining = timeout
+        while True:
+            # DescribeImages defaults to Available and therefore hides an
+            # image while it is still Creating.  Poll every lifecycle state.
+            images = self.describe_images(image_id=image_id, status='ALL')
+            if images and str(images[0].status).lower() == str(status).lower():
+                return True
+
+            remaining -= delay
+            if remaining <= 0:
+                raise Exception(
+                    "Timeout Error: Waiting for image {0} status {1}, "
+                    "time-consuming {2} seconds.".format(image_id, status, timeout)
+                )
+            time.sleep(delay)
 
     def get_all_images(self, image_id=None, image_name=None,
                        snapshot_id=None, filters=None):

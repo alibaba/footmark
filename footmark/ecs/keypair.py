@@ -66,10 +66,12 @@ class KeyPair(TaggedECSObject):
         return self.connection.delete_key_pair(key_pair_names=[self.name])
 
     def add_tags(self, tags):
-        return self.connection.tag_resources(resource_ids=[self.id], resource_type='keypair', tags=tags)
+        # ECS key pairs are identified by name; DescribeKeyPairs does not
+        # return a key_pair_id for TagResources to consume.
+        return self.connection.tag_resources(resource_ids=[self.name], resource_type='keypair', tags=tags)
 
     def remove_tags(self, tags):
-        return self.connection.untag_resources(resource_ids=[self.id], resource_type='keypair', tags=tags)
+        return self.connection.untag_resources(resource_ids=[self.name], resource_type='keypair', tags=tags)
 
     def get(self):
         return self.connection.describe_key_pairs(key_pair_name=self.name)
