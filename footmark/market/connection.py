@@ -35,7 +35,26 @@ class MARKETConnection(ACSQueryConnection):
                                             ecs_role_name=ecs_role_name)
 
     def describe_products(self, **kwargs):
-        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['ProductItems', Product])
+        query = dict(kwargs)
+        page_size = query.pop('page_size', 100)
+        try:
+            page_size = int(page_size)
+        except (TypeError, ValueError):
+            raise ValueError('page_size must be an integer between 1 and 100')
+        if page_size < 1 or page_size > 100:
+            raise ValueError('page_size must be between 1 and 100')
+
+        products = []
+        page_number = 1
+        while True:
+            page_query = dict(query, page_size=page_size, page_number=page_number)
+            page = self.get_list_new(
+                self.build_request_params(self.format_request_kwargs(**page_query)),
+                ['ProductItems', Product])
+            products.extend(page)
+            if len(page) < page_size:
+                return products
+            page_number += 1
 
     def describe_product(self, **kwargs):
         return self.get_object_new(self.build_request_params(self.format_request_kwargs(**kwargs)), Product)

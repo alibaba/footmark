@@ -1023,7 +1023,7 @@ class ECSConnection(ACSQueryConnection):
 
     def create_image(self, snapshot_id=None, image_name=None, image_version=None, description=None,
                      instance_id=None, disk_mapping=None, client_token=None, wait=None,
-                     wait_timeout=None):
+                     wait_timeout=None, tags=None):
         """
         Create a user-defined image with snapshots of system disks.
         The created image can be used to create a new ECS instance.
@@ -1099,6 +1099,9 @@ class ECSConnection(ACSQueryConnection):
         # specify the instance id
         if instance_id:
             self.build_list_params(params, instance_id, 'InstanceId')
+
+        if tags:
+            self.build_tags_params(params, tags, 20)
 
         # specify the disk device mapping, An optional list of device hashes/dictionaries with custom configurations
         if disk_mapping:
@@ -1184,8 +1187,8 @@ class ECSConnection(ACSQueryConnection):
 
         return changed
 
-    def get_all_images(self, image_id=None, image_name=None, 
-                           snapshot_id=None, filters=None):
+    def get_all_images(self, image_id=None, image_name=None,
+                       snapshot_id=None, filters=None):
             """
             Get all Volumes associated with the current credentials.
 
@@ -1217,32 +1220,46 @@ class ECSConnection(ACSQueryConnection):
             :rtype: list of Volume
             :return: The requested Volume objects
             """
-            params = {}
-            result = []
-            changed = False
+            query = dict(filters or {})
+            page_size = query.pop('page_size', 100)
+            try:
+                page_size = int(page_size)
+            except (TypeError, ValueError):
+                raise ValueError('page_size must be an integer between 1 and 100')
+            if page_size < 1 or page_size > 100:
+                raise ValueError('page_size must be between 1 and 100')
+
             if image_id:
-                self.build_list_params(params, image_id, 'ImageId')
+                query['image_id'] = image_id
             if image_name:
-                self.build_list_params(params, image_name, 'ImageName')
+                query['image_name'] = image_name
             if snapshot_id:
-                self.build_list_params(params, snapshot_id, 'SnapshotId')
-            if filters:
-                self.build_filter_params(params, filters)
-            result = self.get_list('DescribeImages', params, ['Images', Image])
-            if result:
-                changed = True;
-            else:
-                while changed == False:
-                    time.sleep(20);
-                    result = self.get_list('DescribeImages', params, ['Images', Image])
-                    if result:
-                        changed = True;
-                        break                
-                    
-            return result;
+                query['snapshot_id'] = snapshot_id
+
+            query['page_size'] = page_size
+            return self.describe_images(**query)
 
     def describe_images(self, **kwargs):
-        return self.get_list_new(self.build_request_params(self.format_request_kwargs(**kwargs)), ['Images', Image])
+        query = dict(kwargs)
+        page_size = query.pop('page_size', 100)
+        try:
+            page_size = int(page_size)
+        except (TypeError, ValueError):
+            raise ValueError('page_size must be an integer between 1 and 100')
+        if page_size < 1 or page_size > 100:
+            raise ValueError('page_size must be between 1 and 100')
+
+        images = []
+        page_number = 1
+        while True:
+            page_query = dict(query, page_size=page_size, page_number=page_number)
+            page = self.get_list_new(
+                self.build_request_params(self.format_request_kwargs(**page_query)),
+                ['Images', Image])
+            images.extend(page)
+            if len(page) < page_size:
+                return images
+            page_number += 1
 
     def get_snapshot_image(self, snapshot_id):
         params = {}
@@ -1478,4 +1495,3 @@ class ECSConnection(ACSQueryConnection):
             kwargs['tag_keys'] = tmp
             return self.get_status_new(self.build_request_params(self.format_request_kwargs(**kwargs)))
         return False
-

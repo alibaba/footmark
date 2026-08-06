@@ -37,10 +37,14 @@ class KeyPair(TaggedECSObject):
         if name == 'name':
             self.key_pair_name = value
         if name == 'tags' and value:
-            v = {}
-            for tag in value['tag']:
-                v[tag.get('TagKey')] = tag.get('TagValue', None)
-            value = v
+            tag_items = value.get('tag') if isinstance(value, dict) else None
+            if tag_items is not None:
+                normalized = {}
+                for tag in tag_items:
+                    key = tag.get('tag_key', tag.get('TagKey'))
+                    if key:
+                        normalized[key] = tag.get('tag_value', tag.get('TagValue'))
+                value = normalized
         super(TaggedECSObject, self).__setattr__(name, value)
 
     def import_key(self, name=None, public_key_body=None):
@@ -60,6 +64,12 @@ class KeyPair(TaggedECSObject):
 
     def delete(self):
         return self.connection.delete_key_pair(key_pair_names=[self.name])
+
+    def add_tags(self, tags):
+        return self.connection.tag_resources(resource_ids=[self.id], resource_type='keypair', tags=tags)
+
+    def remove_tags(self, tags):
+        return self.connection.untag_resources(resource_ids=[self.id], resource_type='keypair', tags=tags)
 
     def get(self):
         return self.connection.describe_key_pairs(key_pair_name=self.name)
