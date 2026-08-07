@@ -89,6 +89,17 @@ class TestTaggedObjects(unittest.TestCase):
             'set_Tag.1.Value': 'Ansible',
         })
 
+    def test_allows_tags_without_a_maximum(self):
+        connection = ECSConnection.__new__(ECSConnection)
+        params = {}
+
+        connection.build_tags_params(params, {'ManagedBy': 'Ansible'})
+
+        self.assertEqual(params, {
+            'set_Tag.1.Key': 'ManagedBy',
+            'set_Tag.1.Value': 'Ansible',
+        })
+
     def test_image_accepts_normalized_tag_fields(self):
         image = Image()
 
@@ -189,6 +200,17 @@ class TestImageWait(unittest.TestCase):
 
         connection.describe_images.assert_called_once_with(image_id='m-test', status='ALL')
         sleep.assert_not_called()
+
+    def test_waits_until_the_configured_timeout(self):
+        connection = ECSConnection.__new__(ECSConnection)
+        connection.describe_images = mock.Mock(return_value=[])
+
+        with mock.patch('footmark.ecs.connection.time.monotonic', side_effect=[100, 100, 108, 110]), \
+                mock.patch('footmark.ecs.connection.time.sleep') as sleep:
+            with self.assertRaises(Exception):
+                connection.wait_for_image_status('m-test', 'Available', delay=10, timeout=10)
+
+        self.assertEqual(sleep.call_args_list, [mock.call(10), mock.call(2)])
 
 
 if __name__ == '__main__':

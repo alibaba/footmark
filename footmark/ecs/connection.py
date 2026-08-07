@@ -88,7 +88,7 @@ class ECSConnection(ACSQueryConnection):
         tag_no = 1
         if tags:
             for key, value in list(tags.items()):
-                if tag_no > max_tag_number:
+                if max_tag_number is not None and tag_no > max_tag_number:
                     break
                 if key:
                     # ECS expects the dotted query names Tag.N.Key/Tag.N.Value.
@@ -1203,7 +1203,7 @@ class ECSConnection(ACSQueryConnection):
     def wait_for_image_status(self, image_id, status,
                               delay=DefaultWaitForInterval, timeout=DefaultTimeOut):
         """Wait until a custom image reaches the requested ECS status."""
-        remaining = timeout
+        deadline = time.monotonic() + timeout
         while True:
             # DescribeImages defaults to Available and therefore hides an
             # image while it is still Creating.  Poll every lifecycle state.
@@ -1211,13 +1211,13 @@ class ECSConnection(ACSQueryConnection):
             if images and str(images[0].status).lower() == str(status).lower():
                 return True
 
-            remaining -= delay
+            remaining = deadline - time.monotonic()
             if remaining <= 0:
                 raise Exception(
                     "Timeout Error: Waiting for image {0} status {1}, "
                     "time-consuming {2} seconds.".format(image_id, status, timeout)
                 )
-            time.sleep(delay)
+            time.sleep(min(delay, remaining))
 
     def get_all_images(self, image_id=None, image_name=None,
                        snapshot_id=None, filters=None):
