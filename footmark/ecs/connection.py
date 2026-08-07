@@ -1222,22 +1222,19 @@ class ECSConnection(ACSQueryConnection):
     def get_all_images(self, image_id=None, image_name=None,
                        snapshot_id=None, filters=None):
             """
-            Get all Volumes associated with the current credentials.
+            Get all ECS images associated with the current credentials.
 
-            :type image_id: dict
-            :param image_id: Optional  image id.  If this is present,
-                             only the image associated with these
-                             image id will be returned.
+            :type image_id: str
+            :param image_id: Optional image ID. If present, only the
+                             matching image is returned.
         
-            :type image_name: dict
-            :param image_name: Optional image name.  If this is present,
-                               only the image associated with these 
-                               image name will be returned.
+            :type image_name: str
+            :param image_name: Optional image name. If present, only images
+                               matching the name are returned.
 
-            :type snapshot_id: list
-            :param snapshot_id: Optional snapshot id.  If this list is
-                                present, only the image associated with
-                                these snapshot id will be returned.
+            :type snapshot_id: str
+            :param snapshot_id: Optional snapshot ID. If present, only images
+                                associated with the snapshot are returned.
 
             :type filters: dict
             :param filters: Optional filters that can be used to limit
@@ -1245,12 +1242,17 @@ class ECSConnection(ACSQueryConnection):
                             in the form of a dictionary consisting of
                             filter names as the key and filter values
                             as the value.  The set of allowable filter
-                            names/values is dependent on the request
-                            being performed.  Check the ECS API guide
-                            for details.
+                            names/values is dependent on the request being
+                            performed. Common values include
+                            ``image_owner_alias``, ``instance_type`` and
+                            ``os_type``. ``page_size`` is validated as an
+                            integer from 1 to 100 and controls each API page.
+                            All pages are followed until the final short page.
+                            A query with no matching images returns an empty
+                            list.
 
-            :rtype: list of Volume
-            :return: The requested Volume objects
+            :rtype: list of Image
+            :return: The requested Image objects.
             """
             query = dict(filters or {})
             page_size = query.pop('page_size', 100)
