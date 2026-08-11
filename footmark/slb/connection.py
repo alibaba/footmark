@@ -301,7 +301,7 @@ class SLBConnection(ACSQueryConnection):
                                             vserver_group_id='',\
                                             gzip='',\
                                             server_certificate_id='',\
-                                            master_slave_server_group_id='',\
+                                            main_subordinate_server_group_id='',\
                                             persistence_timeout=None,\
                                             health_check_connect_timeout=None,\
                                             xforwarded_for = 'on',\
@@ -355,8 +355,8 @@ class SLBConnection(ACSQueryConnection):
         :param: gzip: whether open Gzip compression
         :type: server_certificate_id: string
         :param: server_certificate_id: Server certificate ID.
-        :type: master_slave_server_group_id: string
-        :param: master_slave_server_group_id: Master standby server group ID
+        :type: main_subordinate_server_group_id: string
+        :param: main_subordinate_server_group_id: Main standby server group ID
         :type: persistence_timeout: string
         :param: persistence_timeout: Timeout time for connection persistence.
         :type: health_check_connect_timeout: int
@@ -418,8 +418,8 @@ class SLBConnection(ACSQueryConnection):
             self.build_list_params(params, health_check_http_code, 'HealthCheckHttpCode')
         if vserver_group_id:
             self.build_list_params(params, vserver_group_id, 'VServerGroupId')
-        if master_slave_server_group_id:
-            self.build_list_params(params, master_slave_server_group_id, 'MasterSlaveServerGroupId')
+        if main_subordinate_server_group_id:
+            self.build_list_params(params, main_subordinate_server_group_id, 'MainSubordinateServerGroupId')
         if persistence_timeout:
             self.build_list_params(params, persistence_timeout, 'PersistenceTimeout')
         if health_check_connect_timeout:
@@ -470,14 +470,14 @@ class SLBConnection(ACSQueryConnection):
                                     vserver_group_id='',\
                                     gzip='',\
                                     server_certificate_id='',\
-                                    master_slave_server_group_id='',\
+                                    main_subordinate_server_group_id='',\
                                     persistence_timeout=None,\
                                     health_check_connect_timeout=None,\
                                     ca_certificate_id='',\
                                     syn_proxy='',\
                                     health_check_type='',\
                                     vserver_group='',\
-                                    master_slave_server_group='',
+                                    main_subordinate_server_group='',
                                     xforwarded_for='on'):
         """
         set listener attribute
@@ -523,8 +523,8 @@ class SLBConnection(ACSQueryConnection):
         :param: gzip: whether open Gzip compression
         :type: server_certificate_id: string
         :param: server_certificate_id: Server certificate ID.
-        :type: master_slave_server_group_id: string
-        :param: master_slave_server_group_id: Master standby server group ID
+        :type: main_subordinate_server_group_id: string
+        :param: main_subordinate_server_group_id: Main standby server group ID
         :type: persistence_timeout: string
         :param: persistence_timeout: Timeout time for connection persistence.
         :type: health_check_connect_timeout: int
@@ -539,8 +539,8 @@ class SLBConnection(ACSQueryConnection):
         :param: health_check_type: health check type
         :type: vserver_group: string
         :param: vserver_group: Whether to use a virtual server group
-        :type: master_slave_server_group: string
-        :param: master_slave_server_group: Whether to use the primary and secondary server groups
+        :type: main_subordinate_server_group: string
+        :param: main_subordinate_server_group: Whether to use the primary and secondary server groups
         :return: returns request status
         """
         params = {}
@@ -591,10 +591,10 @@ class SLBConnection(ACSQueryConnection):
             self.build_list_params(params, vserver_group, 'VServerGroup')
         if vserver_group_id:
             self.build_list_params(params, vserver_group_id, 'VServerGroupId')
-        if master_slave_server_group_id:
-            self.build_list_params(params, master_slave_server_group_id, 'MasterSlaveServerGroupId')
-        if master_slave_server_group:
-            self.build_list_params(params, master_slave_server_group, 'MasterSlaveServerGroup')
+        if main_subordinate_server_group_id:
+            self.build_list_params(params, main_subordinate_server_group_id, 'MainSubordinateServerGroupId')
+        if main_subordinate_server_group:
+            self.build_list_params(params, main_subordinate_server_group, 'MainSubordinateServerGroup')
         if ca_certificate_id:
             self.build_list_params(params, ca_certificate_id, 'CACertificateId')
         if syn_proxy:
